@@ -22,4 +22,4 @@ with open("../models/linear_regression.onnx", "wb") as f:
     f.write(onnx_model.SerializeToString())
 
 # display
-print(onnx_model)
+print(type(onnx_model))
