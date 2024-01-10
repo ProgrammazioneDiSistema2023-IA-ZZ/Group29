@@ -18,7 +18,7 @@ onnx_model = make_model(graph)
 check_model(onnx_model)
 
 # The serialization
-with open("../models/linear_regression.onnx", "wb") as f:
+with open("../onnx_interpreter/models/linear_regression.onnx", "wb") as f:
     f.write(onnx_model.SerializeToString())
 
 # display
