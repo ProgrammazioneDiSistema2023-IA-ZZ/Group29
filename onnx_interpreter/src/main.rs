@@ -2,6 +2,8 @@ use onnx_interpreter::onnx;
 use onnx_interpreter::file;
 use onnx_interpreter::onnx::ModelProto;
 
+mod operations;
+
 fn main() {
     //Example of write and read any object
     let path = "models/test.onnx";
