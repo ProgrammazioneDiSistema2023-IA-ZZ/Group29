@@ -1,8 +1,7 @@
-use std::fs::File;
-use std::io::{self, Read};
-use prost::Message;
-use ndarray::{Array, Array2, Zip};
+use onnx_interpreter::onnx::ModelProto;
+use ndarray::{Array2, Zip};
 use std::ops::{Add, Div, Sub, Mul};
+
 
 // Funzione per stampare una lista di tensori
 pub fn print_tensors(tensors: Vec<Array2<f32>>) {
@@ -75,13 +74,11 @@ pub fn min_tensors(tensor_a: &Array2<f32>, tensor_b: &Array2<f32>) -> Array2<f32
     result_tensor
 }
 
-/* 
+
 // Funzione principale per eseguire le operazioni specifiche sul modello ONNX
-pub fn perform_operations(model_path: &str) {
+pub fn perform_operations(model: ModelProto) {
     // Carica il modello ONNX utilizzando la funzione dal modulo onnx_handler
-    match read_onnx_model(model_path) {
-        Ok(model) => {
-            // Modello ONNX
+    
 
             if let Some(graph) = model.graph.as_ref() {
                 for node in &graph.node {
@@ -116,10 +113,5 @@ pub fn perform_operations(model_path: &str) {
 
             // Stampa tutti i tensori
             print_tensors(tensors_to_print);
-        }
-        Err(err) => {
-            eprintln!("Errore durante la lettura del modello ONNX: {:?}", err);
-        }
+        
     }
-}
-*/

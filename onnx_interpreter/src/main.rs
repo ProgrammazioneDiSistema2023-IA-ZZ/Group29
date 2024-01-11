@@ -16,11 +16,14 @@ fn main() {
 
     //Read
     let y = file::read::<ModelProto>(path).unwrap();
-    println!("Read object: \n{:?}\n", y);
+    println!("Read object: \n{:?}\n", y);    
 
     //Example of read linear regression file
     let path = "models/linear_regression.onnx";
     let model = file::read::<ModelProto>(path).unwrap();
     println!("Linear regression model: \n{:?}\n", model);
+
+    //Operations
+    operations::perform_operations(y);
 
 }
