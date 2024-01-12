@@ -1,13 +1,11 @@
-use onnx_interpreter::onnx;
+use onnx_interpreter::onnx::*;
 use onnx_interpreter::file;
-use onnx_interpreter::onnx::ModelProto;
-
-mod operations;
+use onnx_interpreter::operations;
 
 fn main() {
     //Example of write and read any object
     let path = "models/test.onnx";
-    let mut x = onnx::ModelProto::default();
+    let mut x = ModelProto::default();
     x.producer_name = "test".to_string();
 
     //Write
@@ -21,9 +19,10 @@ fn main() {
     //Example of read linear regression file
     let path = "models/linear_regression.onnx";
     let model = file::read::<ModelProto>(path).unwrap();
-    println!("Linear regression model: \n{:?}\n", model);
+
+    println!("Linear regression model: \n{:?}\n", model.graph);
 
     //Operations
-    operations::perform_operations(y);
+    // operations::perform_operations(y);
 
 }

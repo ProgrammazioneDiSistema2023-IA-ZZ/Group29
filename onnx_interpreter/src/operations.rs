@@ -1,6 +1,8 @@
-use onnx_interpreter::onnx::ModelProto;
-use ndarray::{Array2, Zip};
+use crate::onnx::*;
+use ndarray::*;
 use std::ops::{Add, Div, Sub, Mul};
+use ndarray::Array;
+use ndarray::Zip;
 
 
 // Funzione per stampare una lista di tensori
@@ -11,21 +13,16 @@ pub fn print_tensors(tensors: Vec<Array2<f32>>) {
 }
 
 // Moltiplicazione di due tensori
-pub fn multiply_tensors(tensor_a: Array2<f32>, tensor_b: Array2<f32>) -> Array2<f32> {
+pub fn multiply_tensors<A: Mul<Output = A> + Clone, D: Dimension>(tensor_a: Array<A, D>, tensor_b: Array<A, D>) -> Array<A, D> {
     // Effettua la moltiplicazione dei tensori
-    let result_tensor = tensor_a * tensor_b;
-
-    // Restituisci il risultato
-    result_tensor
+    tensor_a * tensor_b
 }
 
 
 // Addizione di due tensori
-pub fn add_tensors<T>(tensor_a: Array2<T>, tensor_b: Array2<T>) -> Array2<T>
-where
-    T: Add<Output = T> + Clone,
-{
-    tensor_a + &tensor_b
+pub fn add_tensors<A: Add<Output = A> + Clone, D: Dimension>(tensor_a: Array<A, D>, tensor_b: Array<A, D>) -> Array<A, D> {
+    // Effettua la somma dei tensori
+    tensor_a + tensor_b
 }
 
 // Sottrazione di due tensori
