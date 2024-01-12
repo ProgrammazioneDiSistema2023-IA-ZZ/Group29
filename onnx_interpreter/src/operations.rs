@@ -1,5 +1,6 @@
-use onnx_interpreter::onnx::ModelProto;
-use ndarray::{Array2, Zip};
+use onnx_interpreter::onnx::{ModelProto, NodeProto, TensorProto};
+use std::collections::HashMap;
+use ndarray::{Array2, Zip, Array, ArrayBase, Data, IxDyn};
 use std::ops::{Add, Div, Sub, Mul};
 
 
@@ -115,3 +116,91 @@ pub fn perform_operations(model: ModelProto) {
             print_tensors(tensors_to_print);
         
     }
+
+
+
+pub fn execute_onnx(
+    node: &NodeProto,
+    input_tensors: &HashMap<String, Array<f32, IxDyn>>,
+    output_tensors: &mut HashMap<String, Array<f32, IxDyn>>,
+) {
+    // Estrai informazioni dal nodo ONNX
+    let op_type = &node.op_type;
+    let input_names = &node.input;
+    let output_names = &node.output;
+    let attributes = &node.attribute;
+
+    // Gestisci diverse operazioni in base al tipo di operatore (op_type)
+    match op_type.as_str() {
+        // Aggiungi casi per ciascun tipo di operatore supportato
+        "Add" => {
+            // Esempio: Somma due tensori
+            let input_a = input_tensors.get(&input_names[0]).unwrap();
+            let input_b = input_tensors.get(&input_names[1]).unwrap();
+            let output = input_a + input_b;
+            output_tensors.insert(output_names[0].clone(), output);
+        }
+        // Aggiungi altri casi per altri operatori supportati
+        // ...
+
+        // Gestisci i casi non supportati
+        _ => {
+            eprintln!("Unsupported operator type: {}", op_type);
+            // Puoi gestire l'operatore sconosciuto in modo specifico o ignorarlo
+        }
+    }
+}
+
+
+pub fn inference(
+    model: ModelProto,
+    input_tensors: HashMap<String, Array<f32, IxDyn>>,
+) -> HashMap<String, Array<f32, IxDyn>> {
+    let mut output_tensors: HashMap<String, Array<f32, IxDyn>> = HashMap::new();
+
+    // Accedi direttamente al campo `graph`
+    if let Some(graph) = model.graph {
+        // Estrai il grafo e gli input
+        let nodes = graph.node;
+        let initializers = graph.initializer;
+
+        // Prepara i tensori di input
+        let mut all_tensors: HashMap<String, Array<f32, IxDyn>> = HashMap::new();
+        all_tensors.extend(input_tensors);
+
+        // Aggiungi gli initializer ai tensori di input
+        for initializer in initializers {
+            let name = initializer.name;
+            let array = convert_tensor_proto_to_array(&initializer);
+            all_tensors.insert(name, array);
+        }
+
+        // Itera sui nodi del grafo e esegui l'inferenza
+        for node in nodes {
+            execute_onnx(&node, &all_tensors, &mut output_tensors);
+        }
+    }
+
+    // Restituisci i risultati
+    output_tensors
+}
+
+fn convert_tensor_proto_to_array(tensor_proto: &TensorProto) -> Array<f32, IxDyn> {
+    // Estrai i campi necessari da TensorProto
+    let dims: Vec<usize> = tensor_proto.dims.iter().map(|&d| d as usize).collect();
+    
+    // Converte i dati in un Array<f32, IxDyn>
+    let array = match tensor_proto.data_type {
+        DataType::FLOAT => {
+            let tensor_data = tensor_proto.float_data.as_ref().unwrap_or(&vec![]);
+            Array::from_shape_vec(dims.into(), tensor_data.clone()).unwrap()
+        }
+        // Aggiungi altri casi per gli altri tipi di dato supportati
+        _ => {
+            eprintln!("Unsupported data type: {:?}", tensor_proto.data_type);
+            Array::from_shape_vec(IxDyn(&[]), vec![]).unwrap()
+        }
+    };
+
+    array
+}
