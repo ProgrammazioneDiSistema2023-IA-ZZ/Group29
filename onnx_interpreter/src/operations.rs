@@ -1,10 +1,7 @@
-use onnx_interpreter::onnx::{ModelProto, NodeProto, TensorProto};
+use crate::onnx::{ModelProto, NodeProto, TensorProto};
 use std::collections::HashMap;
-use ndarray::{Array2, Zip, Array, ArrayBase, Data, IxDyn};
+use ndarray::{Array2, Zip, Array, ArrayBase, Data, IxDyn, Dimension, linalg::Dot};
 use std::ops::{Add, Div, Sub, Mul};
-use ndarray::Array;
-use ndarray::Zip;
-
 
 // Funzione per stampare una lista di tensori
 pub fn print_tensors(tensors: Vec<Array2<f32>>) {
@@ -19,11 +16,14 @@ pub fn multiply_tensors<A: Mul<Output = A> + Clone, D: Dimension>(tensor_a: Arra
     tensor_a * tensor_b
 }
 
-
 // Addizione di due tensori
-pub fn add_tensors<A: Add<Output = A> + Clone, D: Dimension>(tensor_a: Array<A, D>, tensor_b: Array<A, D>) -> Array<A, D> {
+pub fn add_tensors<A: Add<Output = A> + Clone, D: Dimension>(tensor_a: &Array<A, D>, tensor_b: &Array<A, D>) -> Array<A, D> {
     // Effettua la somma dei tensori
     tensor_a + tensor_b
+}
+
+pub fn matmul_tensors(arr1: &Array2<f32>, arr2: &Array2<f32>) -> Array2<f32> {
+    arr1.dot(arr2)
 }
 
 // Sottrazione di due tensori
@@ -89,7 +89,7 @@ pub fn perform_operations(model: ModelProto) {
             let tensor_b = Array2::from_shape_fn((2, 2), |(i, j)| (i * j) as f32);
 
             let result_multiply = multiply_tensors(tensor_a.clone(), tensor_b.clone());
-            let result_add = add_tensors(tensor_a.clone(), tensor_b.clone());
+            //let result_add = add_tensors(tensor_a, tensor_b);
             let result_sub = sub_tensors(tensor_a.clone(), tensor_b.clone());
             let result_mul = mul_tensors(tensor_a.clone(), tensor_b.clone());
             let result_div = div_tensors(tensor_a.clone(), tensor_b.clone());
@@ -101,7 +101,7 @@ pub fn perform_operations(model: ModelProto) {
                 tensor_a,
                 tensor_b,
                 result_multiply,
-                result_add,
+                //result_add,
                 result_sub,
                 result_mul,
                 result_div,
@@ -159,18 +159,18 @@ pub fn inference(
     if let Some(graph) = model.graph {
         // Estrai il grafo e gli input
         let nodes = graph.node;
-        let initializers = graph.initializer;
+        //let initializers = graph.initializer;
 
         // Prepara i tensori di input
         let mut all_tensors: HashMap<String, Array<f32, IxDyn>> = HashMap::new();
         all_tensors.extend(input_tensors);
 
         // Aggiungi gli initializer ai tensori di input
-        for initializer in initializers {
-            let name = initializer.name;
-            let array = convert_tensor_proto_to_array(&initializer);
-            all_tensors.insert(name, array);
-        }
+        // for initializer in initializers {
+        //     let name = initializer.name;
+        //     let array = convert_tensor_proto_to_array(&initializer);
+        //     all_tensors.insert(name, array);
+        // }
 
         // Itera sui nodi del grafo e esegui l'inferenza
         for node in nodes {
@@ -182,22 +182,22 @@ pub fn inference(
     output_tensors
 }
 
-fn convert_tensor_proto_to_array(tensor_proto: &TensorProto) -> Array<f32, IxDyn> {
-    // Estrai i campi necessari da TensorProto
-    let dims: Vec<usize> = tensor_proto.dims.iter().map(|&d| d as usize).collect();
+// fn convert_tensor_proto_to_array(tensor_proto: &TensorProto) -> Array<f32, IxDyn> {
+//     // Estrai i campi necessari da TensorProto
+//     let dims: Vec<usize> = tensor_proto.dims.iter().map(|&d| d as usize).collect();
     
-    // Converte i dati in un Array<f32, IxDyn>
-    let array = match tensor_proto.data_type {
-        DataType::FLOAT => {
-            let tensor_data = tensor_proto.float_data.as_ref().unwrap_or(&vec![]);
-            Array::from_shape_vec(dims.into(), tensor_data.clone()).unwrap()
-        }
-        // Aggiungi altri casi per gli altri tipi di dato supportati
-        _ => {
-            eprintln!("Unsupported data type: {:?}", tensor_proto.data_type);
-            Array::from_shape_vec(IxDyn(&[]), vec![]).unwrap()
-        }
-    };
+//     // Converte i dati in un Array<f32, IxDyn>
+//     let array = match tensor_proto.data_type {
+//         DataType::FLOAT => {
+//             let tensor_data = tensor_proto.float_data.as_ref().unwrap_or(&vec![]);
+//             Array::from_shape_vec(dims.into(), tensor_data.clone()).unwrap()
+//         }
+//         // Aggiungi altri casi per gli altri tipi di dato supportati
+//         _ => {
+//             eprintln!("Unsupported data type: {:?}", tensor_proto.data_type);
+//             Array::from_shape_vec(IxDyn(&[]), vec![]).unwrap()
+//         }
+//     };
 
-    array
-}
+//     array
+// }

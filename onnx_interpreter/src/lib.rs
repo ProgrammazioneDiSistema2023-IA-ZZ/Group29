@@ -5,3 +5,5 @@ pub mod onnx {
 pub mod file;
 
 pub mod operations;
+
+pub mod interpreter;

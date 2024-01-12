@@ -1,6 +1,9 @@
+use std::collections::HashMap;
+use ndarray::Array2;
+
+use onnx_interpreter::interpreter::execute_graph;
 use onnx_interpreter::onnx::*;
 use onnx_interpreter::file;
-use onnx_interpreter::operations;
 
 fn main() {
     //Example of write and read any object
@@ -22,7 +25,15 @@ fn main() {
 
     println!("Linear regression model: \n{:?}\n", model.graph);
 
-    //Operations
-    // operations::perform_operations(y);
+    //Example of execute graph
+    let mut inputs = HashMap::new();
+    inputs.insert("X".to_string(), Array2::from_shape_vec((2, 2), vec![1.0, 2.0, 3.0, 4.0]).unwrap());
+    inputs.insert("A".to_string(), Array2::from_shape_vec((2, 2), vec![1.0, 2.0, 3.0, 4.0]).unwrap());
+    inputs.insert("B".to_string(), Array2::from_shape_vec((2, 2), vec![1.0, 2.0, 3.0, 4.0]).unwrap());
+
+    let outputs = execute_graph(&model.graph.unwrap(), &mut inputs);
+
+    //Print outputs
+    outputs.iter().for_each(|(name, tensor)| println!("Output: {:?} \n{:?}", name, tensor));
 
 }
