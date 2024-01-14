@@ -2,6 +2,7 @@ use crate::onnx::{ModelProto, NodeProto, TensorProto};
 use std::collections::HashMap;
 use ndarray::{Array2, Zip, Array, ArrayBase, Data, IxDyn, Dimension, linalg::Dot};
 use std::ops::{Add, Div, Sub, Mul};
+use num_traits::float::Float;
 
 // Funzione per stampare una lista di tensori
 pub fn print_tensors(tensors: Vec<Array2<f32>>) {
@@ -21,6 +22,49 @@ pub fn add_tensors<A: Add<Output = A> + Clone, D: Dimension>(tensor_a: &Array<A,
     // Effettua la somma dei tensori
     tensor_a + tensor_b
 }
+
+//Esponenziale di un tensore (element-wise)
+pub fn exp<A: Sync + Send + Float, D: Dimension> (tensor: &Array<A, D>) -> Array<A, D> {
+    Zip::from(tensor).par_map_collect(|x| x.exp())
+}
+
+//Floor di un tensore (element-wise)
+pub fn floor<A: Sync + Send + Float, D: Dimension> (tensor: &Array<A, D>) -> Array<A, D> {
+    Zip::from(tensor).par_map_collect(|x| x.floor())
+}
+
+//Logaritmo naturale di un tensore (element-wise)
+pub fn log<A: Sync + Send + Float, D: Dimension> (tensor: &Array<A, D>) -> Array<A, D> {
+    Zip::from(tensor).par_map_collect(|x| x.ln())
+}
+
+//Operatori logici
+pub fn greater<A: Sync + Send + PartialOrd, D: Dimension> (tensor_a: &Array<A, D>, tensor_b: &Array<A, D>) -> Array<bool, D> {
+    Zip::from(tensor_a)
+        .and(tensor_b)
+        .par_map_collect(|a, b| a>b)
+}
+
+pub fn greater_or_equal<A: Sync + Send + PartialOrd, D: Dimension> (tensor_a: &Array<A, D>, tensor_b: &Array<A, D>) -> Array<bool, D> {
+    Zip::from(tensor_a)
+        .and(tensor_b)
+        .par_map_collect(|a, b| a>=b)
+}
+
+pub fn less<A: Sync + Send + PartialOrd, D: Dimension> (tensor_a: &Array<A, D>, tensor_b: &Array<A, D>) -> Array<bool, D> {
+    Zip::from(tensor_a)
+        .and(tensor_b)
+        .par_map_collect(|a, b| a<b)
+}
+
+pub fn less_or_equal<A: Sync + Send + PartialOrd, D: Dimension> (tensor_a: &Array<A, D>, tensor_b: &Array<A, D>) -> Array<bool, D> {
+    Zip::from(tensor_a)
+        .and(tensor_b)
+        .par_map_collect(|a, b| a<=b)
+}
+
+
+
 
 pub fn matmul_tensors(arr1: &Array2<f32>, arr2: &Array2<f32>) -> Array2<f32> {
     arr1.dot(arr2)
