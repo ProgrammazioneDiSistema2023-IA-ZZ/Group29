@@ -12,13 +12,21 @@ pub fn print_tensors(tensors: Vec<Array2<f32>>) {
 }
 
 // Moltiplicazione di due tensori
-pub fn multiply_tensors<A: Mul<Output = A> + Clone, D: Dimension>(tensor_a: Array<A, D>, tensor_b: Array<A, D>) -> Array<A, D> {
+pub fn multiply_tensors<A, D>(tensor_a: &Array<A, D>, tensor_b: &Array<A, D>) -> Array<A, D>
+where
+    A: Mul<Output = A> + Clone,
+    D: Dimension,
+{
     // Effettua la moltiplicazione dei tensori
     tensor_a * tensor_b
 }
 
 // Addizione di due tensori
-pub fn add_tensors<A: Add<Output = A> + Clone, D: Dimension>(tensor_a: &Array<A, D>, tensor_b: &Array<A, D>) -> Array<A, D> {
+pub fn add_tensors<A, D>(tensor_a: &Array<A, D>, tensor_b: &Array<A, D>) -> Array<A, D>
+where
+    A: Add<Output = A> + Clone,
+    D: Dimension,
+{
     // Effettua la somma dei tensori
     tensor_a + tensor_b
 }
@@ -70,28 +78,23 @@ pub fn matmul_tensors(arr1: &Array2<f32>, arr2: &Array2<f32>) -> Array2<f32> {
     arr1.dot(arr2)
 }
 
-// Sottrazione di due tensori
-pub fn sub_tensors<T>(tensor_a: Array2<T>, tensor_b: Array2<T>) -> Array2<T>
+// Sottrazione di due tensori 
+pub fn sub_tensors<T, D>(tensor_a: Array<T, D>, tensor_b: Array<T, D>) -> Array<T, D>
 where
     T: Sub<Output = T> + Clone,
+    D: Dimension,
 {
-    tensor_a - &tensor_b
+    tensor_a - tensor_b
 }
 
-// Moltiplicazione di due tensori (simile a quanto già implementato)
-pub fn mul_tensors<T>(tensor_a: Array2<T>, tensor_b: Array2<T>) -> Array2<T>
-where
-    T: Mul<Output = T> + Clone,
-{
-    tensor_a * &tensor_b
-}
 
-// Divisione di due tensori
-pub fn div_tensors<T>(tensor_a: Array2<T>, tensor_b: Array2<T>) -> Array2<T>
+// Divisione di due tensori generica
+pub fn div_tensors<T, D>(tensor_a: Array<T, D>, tensor_b: Array<T, D>) -> Array<T, D>
 where
     T: Div<Output = T> + Clone,
+    D: Dimension,
 {
-    tensor_a / &tensor_b
+    tensor_a / tensor_b
 }
 
 // Funzione per eseguire la massimizzazione di due tensori
@@ -131,11 +134,8 @@ pub fn perform_operations(model: ModelProto) {
             // Esempio di tensori
             let tensor_a = Array2::from_shape_fn((2, 2), |(i, j)| (i + j) as f32);
             let tensor_b = Array2::from_shape_fn((2, 2), |(i, j)| (i * j) as f32);
-
-            let result_multiply = multiply_tensors(tensor_a.clone(), tensor_b.clone());
             //let result_add = add_tensors(tensor_a, tensor_b);
             let result_sub = sub_tensors(tensor_a.clone(), tensor_b.clone());
-            let result_mul = mul_tensors(tensor_a.clone(), tensor_b.clone());
             let result_div = div_tensors(tensor_a.clone(), tensor_b.clone());
             let result_max = max_tensors(&tensor_a, &tensor_b);
             let result_min = min_tensors(&tensor_a, &tensor_b);
@@ -144,10 +144,8 @@ pub fn perform_operations(model: ModelProto) {
             let tensors_to_print = vec![
                 tensor_a,
                 tensor_b,
-                result_multiply,
                 //result_add,
                 result_sub,
-                result_mul,
                 result_div,
                 result_max,
                 result_min,
