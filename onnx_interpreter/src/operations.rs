@@ -120,6 +120,43 @@ pub fn min_tensors(tensor_a: &Array2<f32>, tensor_b: &Array2<f32>) -> Array2<f32
     result_tensor
 }
 
+pub fn concat<T>(tensors: Vec<Array<T, IxDyn>>, axis: isize) -> Array<T, IxDyn>
+where
+    T: Clone,
+{
+    // Verifica che i tensori non siano vuoti
+    if tensors.is_empty() {
+        panic!("La lista dei tensori per la concatenazione è vuota");
+    }
+
+    // Calcola l'asse effettivo per la concatenazione
+    let ndim = tensors[0].ndim();
+    let axis = if axis < 0 {
+        (ndim as isize + axis) as usize
+    } else {
+        axis as usize
+    };
+
+    if axis >= ndim {
+        panic!("Asse di concatenazione non valido");
+    }
+
+    // Verifica che tutti i tensori abbiano la stessa forma, tranne l'asse di concatenazione
+    for tensor in &tensors[1..] {
+        if tensor.ndim() != ndim {
+            panic!("Tutti i tensori devono avere lo stesso numero di dimensioni");
+        }
+        for (i, dim) in tensor.dim().slice().iter().enumerate() {
+            if i != axis && *dim != tensors[0].dim()[i] {
+                panic!("Le dimensioni dei tensori devono essere uguali tranne che sull'asse di concatenazione");
+            }
+        }
+    }
+
+    // Concatenazione lungo l'asse specificato
+    ndarray::concatenate(Axis(axis), &tensors.iter().map(|a| a.view()).collect::<Vec<_>>()).unwrap()
+}
+
 // Funzione per eseguire ReLU elementwise
 pub fn relu<T, D>(input: &ArrayBase<OwnedRepr<T>, D>) -> Array<T, D>
 where
@@ -205,36 +242,55 @@ where
     // Converti output in una vista mutabile
     let mut output_view_mut = output.view_mut();
 
-    // Utilizza par_iter_mut per iterare parallelamente sulla vista mutabile
-    output_view_mut.indexed_iter_mut().for_each(|(idx, output_element)| {
-        let (n, m, h, w) = (
-            idx[0],
-            idx[1],
-            idx[2],
-            idx[3],
-        );
+        // Calcola le dimensioni dei gruppi
+    let num_groups = group as usize;
+    let input_group_size = input_shape[1] / num_groups;
+    let weight_group_size = weights.dim()[1] / num_groups;
 
-    let mut sum = T::zero();
+    // Itera sui gruppi
+    for g in 0..num_groups {
+        // Calcola gli indici di inizio e fine per il gruppo corrente
+        let input_group_start = g * input_group_size;
+        let input_group_end = input_group_start + input_group_size;
+        let weight_group_start = g * weight_group_size;
+        let weight_group_end = weight_group_start + weight_group_size;
 
-    for kh in 0..kernel_height {
-        for kw in 0..kernel_width {
-            // Calcola l'indice nel tensore di input imbottito
-            let h_idx = h * strides[0] as usize + kh;
-            let w_idx = w * strides[1] as usize + kw;
+        // Utilizza par_iter_mut per iterare parallelamente sulla vista mutabile
+        output_view_mut.indexed_iter_mut().for_each(|(idx, output_element)| {
+            let (n, m, h, w) = (
+                idx[0],
+                idx[1] + weight_group_start,  // Aggiusta l'indice in base al gruppo
+                idx[2],
+                idx[3],
+            );
 
-            // Aggiungi la moltiplicazione elemento per elemento al sum
-            sum = sum + padded_input[[n, m, h_idx, w_idx]] * weights[[m, kh, kw]];
-        }
+            if m < weight_group_end {
+                let mut sum = T::zero();
+
+                for kh in 0..kernel_height {
+                    for kw in 0..kernel_width {
+                        // Aggiungi la dilatazione all'indice
+                        let h_idx = h * strides[0] as usize + kh * dilations[0] as usize;
+                        let w_idx = w * strides[1] as usize + kw * dilations[1] as usize;
+
+                        // Assicurati di utilizzare il canale corretto del gruppo per il tensore di input
+                        let input_channel = n * input_group_size + input_group_start;
+
+                        // Aggiungi la moltiplicazione elemento per elemento al sum
+                        sum = sum + padded_input[[n, input_channel, h_idx, w_idx]] * weights[[m, kh, kw]];
+                    }
+                }
+
+                // Aggiungi il bias se presente
+                if let Some(b) = bias {
+                    sum = sum + b[m];
+                }
+
+                // Assegna il valore calcolato al tensore di output
+                *output_element = sum;
+            }
+        });
     }
-
-    // Aggiungi il bias se presente
-    if let Some(b) = bias {
-        sum = sum + b[m];
-    }
-
-    // Assegna il valore calcolato al tensore di output
-    *output_element = sum;
-});
 
     output
 
