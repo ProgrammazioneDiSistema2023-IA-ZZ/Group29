@@ -1,8 +1,9 @@
 use crate::onnx::{ModelProto, NodeProto, TensorProto};
 use std::collections::HashMap;
-use ndarray::{Array2, Zip, Array, ArrayBase, Data, IxDyn, Dimension, linalg::Dot};
+use ndarray::{Array2, Zip, Array, Dim, ArrayBase, Data, Ix, IxDyn, Dimension, Axis, OwnedRepr};
 use std::ops::{Add, Div, Sub, Mul};
 use num_traits::float::Float;
+use std::cmp::{max, min};
 
 // Funzione per stampare una lista di tensori
 pub fn print_tensors(tensors: Vec<Array2<f32>>) {
@@ -71,9 +72,6 @@ pub fn less_or_equal<A: Sync + Send + PartialOrd, D: Dimension> (tensor_a: &Arra
         .par_map_collect(|a, b| a<=b)
 }
 
-
-
-
 pub fn matmul_tensors(arr1: &Array2<f32>, arr2: &Array2<f32>) -> Array2<f32> {
     arr1.dot(arr2)
 }
@@ -88,7 +86,7 @@ where
 }
 
 
-// Divisione di due tensori generica
+// Divisione di due tensori
 pub fn div_tensors<T, D>(tensor_a: Array<T, D>, tensor_b: Array<T, D>) -> Array<T, D>
 where
     T: Div<Output = T> + Clone,
@@ -118,44 +116,6 @@ pub fn min_tensors(tensor_a: &Array2<f32>, tensor_b: &Array2<f32>) -> Array2<f32
     // Restituisci il risultato
     result_tensor
 }
-
-
-// Funzione principale per eseguire le operazioni specifiche sul modello ONNX
-pub fn perform_operations(model: ModelProto) {
-    // Carica il modello ONNX utilizzando la funzione dal modulo onnx_handler
-    
-
-            if let Some(graph) = model.graph.as_ref() {
-                for node in &graph.node {
-                    println!("Node: {:?}", node);
-                }
-            }
-
-            // Esempio di tensori
-            let tensor_a = Array2::from_shape_fn((2, 2), |(i, j)| (i + j) as f32);
-            let tensor_b = Array2::from_shape_fn((2, 2), |(i, j)| (i * j) as f32);
-            //let result_add = add_tensors(tensor_a, tensor_b);
-            let result_sub = sub_tensors(tensor_a.clone(), tensor_b.clone());
-            let result_div = div_tensors(tensor_a.clone(), tensor_b.clone());
-            let result_max = max_tensors(&tensor_a, &tensor_b);
-            let result_min = min_tensors(&tensor_a, &tensor_b);
-
-            // Raccogli i tensori in una lista
-            let tensors_to_print = vec![
-                tensor_a,
-                tensor_b,
-                //result_add,
-                result_sub,
-                result_div,
-                result_max,
-                result_min,
-            ];
-
-            // Stampa tutti i tensori
-            print_tensors(tensors_to_print);
-        
-    }
-
 
 
 pub fn execute_onnx(
@@ -223,6 +183,44 @@ pub fn inference(
     // Restituisci i risultati
     output_tensors
 }
+
+// Funzione principale per eseguire le operazioni specifiche sul modello ONNX
+pub fn perform_operations(model: ModelProto) {
+    // Carica il modello ONNX utilizzando la funzione dal modulo onnx_handler
+    
+
+            if let Some(graph) = model.graph.as_ref() {
+                for node in &graph.node {
+                    println!("Node: {:?}", node);
+                }
+            }
+
+            // Esempio di tensori
+            let tensor_a = Array2::from_shape_fn((2, 2), |(i, j)| (i + j) as f32);
+            let tensor_b = Array2::from_shape_fn((2, 2), |(i, j)| (i * j) as f32);
+            //let result_add = add_tensors(tensor_a, tensor_b);
+            let result_sub = sub_tensors(tensor_a.clone(), tensor_b.clone());
+            let result_div = div_tensors(tensor_a.clone(), tensor_b.clone());
+            let result_max = max_tensors(&tensor_a, &tensor_b);
+            let result_min = min_tensors(&tensor_a, &tensor_b);
+
+            // Raccogli i tensori in una lista
+            let tensors_to_print = vec![
+                tensor_a,
+                tensor_b,
+                //result_add,
+                result_sub,
+                result_div,
+                result_max,
+                result_min,
+            ];
+
+            // Stampa tutti i tensori
+            print_tensors(tensors_to_print);
+        
+    }
+
+
 
 // fn convert_tensor_proto_to_array(tensor_proto: &TensorProto) -> Array<f32, IxDyn> {
 //     // Estrai i campi necessari da TensorProto
