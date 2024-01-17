@@ -1,6 +1,6 @@
 use crate::onnx::{ModelProto, NodeProto};
 use std::collections::HashMap;
-use ndarray::{Array2, Zip, Array, ArrayBase, Ix1, IxDyn, Dimension, Axis, OwnedRepr, s};
+use ndarray::{Array2, Zip, Array, ArrayBase, Ix1, IxDyn, Dimension, Axis, OwnedRepr, s, Data};
 use std::ops::{Add, Div, Sub, Mul};
 use num_traits::float::Float;
 use std::cmp::{max, min};
@@ -17,101 +17,135 @@ pub fn print_tensors(tensors: Vec<Array2<f32>>) {
 }
 
 // Moltiplicazione di due tensori (element-wise)
-pub fn multiply<A: Mul<Output = A> + Clone, D: Dimension>(tensor_a: Array<A, D>, tensor_b: Array<A, D>) -> Array<A, D> {
-    // Effettua la moltiplicazione dei tensori
+pub fn multiply<A>(tensor_a: &ArrayBase<OwnedRepr<A>, IxDyn>, tensor_b: &ArrayBase<OwnedRepr<A>, IxDyn>) -> Array<A, IxDyn>
+where
+    A: Mul<Output = A> + Clone,
+{
     tensor_a * tensor_b
 }
 
+
 // Addizione di due tensori (element-wise)
-pub fn add<A: Add<Output = A> + Clone>(tensor_a: &Array<A, IxDyn>, tensor_b: &Array<A, IxDyn>) -> Array<A, IxDyn> {
-    // Effettua la somma dei tensori
+pub fn add<A>(tensor_a: &ArrayBase<OwnedRepr<A>, IxDyn>, tensor_b: &ArrayBase<OwnedRepr<A>, IxDyn>) -> Array<A, IxDyn>
+where
+    A: Add<Output = A> + Clone,
+{
     tensor_a + tensor_b
 }
 
+
 //Esponenziale di un tensore (element-wise)
-pub fn exp<A: Sync + Send + Float, D: Dimension> (tensor: &Array<A, D>) -> Array<A, D> {
-    Zip::from(tensor).par_map_collect(|x| x.exp())
+pub fn exp<A>(tensor: &ArrayBase<OwnedRepr<A>, IxDyn>) -> Array<A, IxDyn>
+where
+    A: Float + Sync + Send,
+{
+    tensor.mapv(|x| x.exp())
 }
+
 
 //Floor di un tensore (element-wise)
-pub fn floor<A: Sync + Send + Float, D: Dimension> (tensor: &Array<A, D>) -> Array<A, D> {
-    Zip::from(tensor).par_map_collect(|x| x.floor())
+pub fn floor<A>(tensor: &ArrayBase<OwnedRepr<A>, IxDyn>) -> Array<A, IxDyn>
+where
+    A: Float + Sync + Send,
+{
+    tensor.mapv(|x| x.floor())
 }
+
 
 //Logaritmo naturale di un tensore (element-wise)
-pub fn log<A: Sync + Send + Float, D: Dimension> (tensor: &Array<A, D>) -> Array<A, D> {
-    Zip::from(tensor).par_map_collect(|x| x.ln())
+pub fn log<A>(tensor: &ArrayBase<OwnedRepr<A>, IxDyn>) -> Array<A, IxDyn>
+where
+    A: Float + Sync + Send,
+{
+    tensor.mapv(|x| x.ln())
 }
+
 
 //Operatori logici
-pub fn greater<A: Sync + Send + PartialOrd, D: Dimension> (tensor_a: &Array<A, D>, tensor_b: &Array<A, D>) -> Array<bool, D> {
+// Comparazione elemento per elemento di due tensori, restituisce un tensore di booleani
+pub fn greater<A, S>(tensor_a: &ArrayBase<S, IxDyn>, tensor_b: &ArrayBase<S, IxDyn>) -> ArrayBase<S, IxDyn>
+where
+    A: Sync + Send + PartialOrd,
+    S: Data<Elem = A>,
+{
     Zip::from(tensor_a)
         .and(tensor_b)
-        .par_map_collect(|a, b| a>b)
+        .par_map_collect(|a, b| a > b)
 }
 
-pub fn greater_or_equal<A: Sync + Send + PartialOrd, D: Dimension> (tensor_a: &Array<A, D>, tensor_b: &Array<A, D>) -> Array<bool, D> {
+pub fn greater_or_equal<A, S>(tensor_a: &ArrayBase<S, IxDyn>, tensor_b: &ArrayBase<S, IxDyn>) -> ArrayBase<S, IxDyn> 
+where
+    A: Sync + Send + PartialOrd,
+    S: Data<Elem = A>,
+{
     Zip::from(tensor_a)
         .and(tensor_b)
         .par_map_collect(|a, b| a>=b)
 }
 
-pub fn less<A: Sync + Send + PartialOrd, D: Dimension> (tensor_a: &Array<A, D>, tensor_b: &Array<A, D>) -> Array<bool, D> {
+pub fn less<A, S>(tensor_a: &ArrayBase<S, IxDyn>, tensor_b: &ArrayBase<S, IxDyn>) -> ArrayBase<S, IxDyn> 
+where
+    A: Sync + Send + PartialOrd,
+    S: Data<Elem = A>,
+{
     Zip::from(tensor_a)
         .and(tensor_b)
         .par_map_collect(|a, b| a<b)
 }
 
-pub fn less_or_equal<A: Sync + Send + PartialOrd, D: Dimension> (tensor_a: &Array<A, D>, tensor_b: &Array<A, D>) -> Array<bool, D> {
+pub fn less_or_equal<A, S>(tensor_a: &ArrayBase<S, IxDyn>, tensor_b: &ArrayBase<S, IxDyn>) -> ArrayBase<S, IxDyn> 
+where
+    A: Sync + Send + PartialOrd,
+    S: Data<Elem = A>,
+{
     Zip::from(tensor_a)
         .and(tensor_b)
         .par_map_collect(|a, b| a<=b)
 }
 
-pub fn matmul_tensors(arr1: &Array2<f32>, arr2: &Array2<f32>) -> Array2<f32> {
+// Moltiplicazione di matrici per tensori di dimensioni dinamiche
+pub fn matmul_tensors<S>(arr1: &ArrayBase<S, IxDyn>, arr2: &ArrayBase<S, IxDyn>) -> ArrayBase<S, IxDyn>
+where
+    S: Data<Elem = f32>,
+{
     arr1.dot(arr2)
 }
 
-// Sottrazione di due tensori 
-pub fn sub_tensors<T, D>(tensor_a: Array<T, D>, tensor_b: Array<T, D>) -> Array<T, D>
+// Sottrazione di due tensori (element-wise)
+pub fn sub_tensors<S>(tensor_a: &ArrayBase<S, IxDyn>, tensor_b: &ArrayBase<S, IxDyn>) -> ArrayBase<S, IxDyn>
 where
-    T: Sub<Output = T> + Clone,
-    D: Dimension,
+    S: Data<Elem = f32>,
 {
     tensor_a - tensor_b
 }
 
-// Divisione di due tensori
-pub fn div_tensors<T, D>(tensor_a: Array<T, D>, tensor_b: Array<T, D>) -> Array<T, D>
+// Divisione di due tensori (element-wise)
+pub fn div_tensors<S>(tensor_a: &ArrayBase<S, IxDyn>, tensor_b: &ArrayBase<S, IxDyn>) -> ArrayBase<S, IxDyn>
 where
-    T: Div<Output = T> + Clone,
-    D: Dimension,
+    S: Data<Elem = f32>,
 {
     tensor_a / tensor_b
 }
 
-// Funzione per eseguire la massimizzazione di due tensori
-pub fn max_tensors(tensor_a: &Array2<f32>, tensor_b: &Array2<f32>) -> Array2<f32> {
-    // Esegui la massimizzazione dei tensori
-    let result_tensor = Zip::from(tensor_a)
+// Massimizzazione di due tensori (element-wise)
+pub fn max_tensors<S>(tensor_a: &ArrayBase<S, IxDyn>, tensor_b: &ArrayBase<S, IxDyn>) -> ArrayBase<S, IxDyn>
+where
+    S: Data<Elem = f32>,
+{
+    Zip::from(tensor_a)
         .and(tensor_b)
-        .map_collect(|&a, &b| a.max(b));
-
-    // Restituisci il risultato
-    result_tensor
+        .par_map_collect(|&a, &b| a.max(b))
 }
 
-// Funzione per eseguire la minimizzazione di due tensori
-pub fn min_tensors(tensor_a: &Array2<f32>, tensor_b: &Array2<f32>) -> Array2<f32> {
-    // Esegui la minimizzazione dei tensori
-    let result_tensor = Zip::from(tensor_a)
+// Minimizzazione di due tensori (element-wise)
+pub fn min_tensors<S>(tensor_a: &ArrayBase<S, IxDyn>, tensor_b: &ArrayBase<S, IxDyn>) -> ArrayBase<S, IxDyn>
+where
+    S: Data<Elem = f32>,
+{
+    Zip::from(tensor_a)
         .and(tensor_b)
-        .map_collect(|&a, &b| a.min(b));
-
-    // Restituisci il risultato
-    result_tensor
+        .par_map_collect(|&a, &b| a.min(b))
 }
-
 
 
 pub fn global_average_pool<T>(input: &Array<T, IxDyn>) -> Array<T, IxDyn>
