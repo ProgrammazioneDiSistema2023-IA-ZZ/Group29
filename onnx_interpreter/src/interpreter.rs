@@ -5,26 +5,29 @@ use crate::onnx::*;
 use crate::operations::*;  
 
 
-pub fn execute_node(node: &NodeProto, inputs:  &HashMap<String, Array2<f32>>) -> HashMap<String, Array2<f32>> {
+pub fn execute_node(node: &NodeProto, inputs: &HashMap<String, Array2<f32>>) -> HashMap<String, Array2<f32>> {
     let mut outputs = HashMap::new();
-    let op_type = &node.op_type;
-    let input_tensors = node.input.iter().map(|input| inputs.get(input).unwrap()).collect::<Vec<&Array2<f32>>>();
-    match op_type.as_str() {
+
+    match node.op_type.as_str() {
         "Add" => {
-            let output = add_tensors(input_tensors[0], input_tensors[1]);
-            outputs.insert(node.output[0].clone(), output);
+            let a = inputs.get(&node.input[0]).unwrap();
+            let b = inputs.get(&node.input[1]).unwrap();
+            let result = add_tensors(a, b);  // Assicurati che `add` sia definita correttamente in `operations`
+            outputs.insert(node.output[0].clone(), result.clone());
         },
-        "MatMul" => {
-            let output = matmul_tensors(input_tensors[0], input_tensors[1]);
-            outputs.insert(node.output[0].clone(), output);
-        }
-        _ => panic!("Operation not supported")            
+        "Relu" => {
+            let a = inputs.get(&node.input[0]).unwrap();
+            let result = relu(a); 
+            outputs.insert(node.output[0].clone(), result.clone());
+        },
+        "Concat" => {
+            // Gestione dell'operatore Concat
+            // ...
+        },
+        // Altri operatori...
+        _ => panic!("Operatore non supportato: {}", node.op_type),
     }
 
-    // Print node information
-    println!("Node: {:?}", node.op_type);
-    input_tensors.iter().for_each(|tensor| println!("Input: \n{:?}", tensor));
-    outputs.iter().for_each(|(name, tensor)| println!("Output: {:?} \n{:?}", name, tensor));
     outputs
 }
 

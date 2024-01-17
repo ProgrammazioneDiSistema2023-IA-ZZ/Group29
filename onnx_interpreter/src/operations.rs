@@ -158,15 +158,12 @@ where
 }
 
 // Funzione per eseguire ReLU elementwise
-pub fn relu<T, D>(input: &ArrayBase<OwnedRepr<T>, D>) -> Array<T, D>
+pub fn relu<T>(input: &ArrayBase<OwnedRepr<T>, IxDyn>) -> Array<T, IxDyn>
 where
-    T: Ord + Default + Clone,
-    D: Dimension,
-    {
-        input.mapv(|x| max(x, T::default()))
-    }
-
-
+    T: Default + Clone + PartialOrd,  // Rimuovi il vincolo `Ord`
+{
+    input.mapv(|x| if x > T::default() { x } else { T::default() })
+}
 
 fn apply_padding<T>(input: &Array<T, IxDyn>, pads: &[i64]) -> Array<T, IxDyn>
 where
@@ -196,7 +193,6 @@ where
     padded_input
 }
 
- 
 // Funzione convolution aggiornata per includere il padding
 pub fn convolution<T>(
     input: &Array<T, IxDyn>, // Input tensor X
@@ -212,14 +208,29 @@ pub fn convolution<T>(
 where
     T: std::ops::Add<Output = T> + std::ops::Mul<Output = T> + Copy + Default + Clone + Zero,
 {
-    // Determina il padding necessario (esempio semplificato)
+    // Determina il padding necessario
+    let input_shape = input.dim();
     let actual_pads = if auto_pad != "NOTSET" {
-        // Calcola il padding basato su auto_pad, kernel_shape, e strides...
-        // Questa parte necessita di un'implementazione specifica
-        vec![0, 0, 0, 0] // Placeholder
+        let mut pad = vec![0; kernel_shape.len() * 2];  // Due valori di padding per dimensione (inizio e fine)
+    
+        for (i, &k) in kernel_shape.iter().enumerate() {
+            let input_size = input_shape[i + 2] as i64;  // +2 per saltare le prime due dimensioni (N e C)
+            let stride = strides[i] as i64;
+            let output_size = (input_size + stride - 1) / stride;  // Calcola le dimensioni dell'output
+            let total_pad = (output_size - 1) * stride + k as i64 - input_size;  // Calcola il padding totale necessario
+            if auto_pad == "SAME_UPPER" {
+                pad[i * 2] = total_pad / 2;  // Padding all'inizio
+                pad[i * 2 + 1] = total_pad - pad[i * 2];  // Padding alla fine
+            } else if auto_pad == "SAME_LOWER" {
+                pad[i * 2 + 1] = total_pad / 2;  // Padding alla fine
+                pad[i * 2] = total_pad - pad[i * 2 + 1];  // Padding all'inizio
+            }
+        }
+        pad
     } else {
-        pads
+        pads.to_vec()
     };
+    
 
     // Applica il padding al tensore di input
     let padded_input = apply_padding(input, &actual_pads);
@@ -328,7 +339,6 @@ pub fn execute_onnx(
     }
 }
 
-
 pub fn inference(
     model: ModelProto,
     input_tensors: HashMap<String, Array<f32, IxDyn>>,
@@ -397,8 +407,6 @@ pub fn perform_operations(model: ModelProto) {
             print_tensors(tensors_to_print);
         
     }
-
-
 
 // fn convert_tensor_proto_to_array(tensor_proto: &TensorProto) -> Array<f32, IxDyn> {
 //     // Estrai i campi necessari da TensorProto
