@@ -1,11 +1,13 @@
 use crate::onnx::{ModelProto, NodeProto, TensorProto};
 use std::collections::HashMap;
-use ndarray::{Array2, Zip, Array, Dim, ArrayBase, Data, Ix1, Ix2, IxDyn, Dimension, Axis, OwnedRepr, s};
+use ndarray::{Array2, Zip, Array, Dim, ArrayBase, Data, Ix1, Ix2, IxDyn, Dimension, Axis, OwnedRepr, s, prelude::*};
 use std::ops::{Add, Div, Sub, Mul};
 use num_traits::float::Float;
 use std::cmp::{max, min};
 use std::iter::FromIterator;
 use num_traits::Zero;
+use rayon::prelude::*;
+use ndarray_parallel::prelude::*;
 
 // Funzione per stampare una lista di tensori
 pub fn print_tensors(tensors: Vec<Array2<f32>>) {
@@ -187,7 +189,7 @@ where
 
     // Calcola le dimensioni del tensore di output
     let input_shape = padded_input.dim();
-    
+
     // Converte tutti i valori coinvolti in usize prima di eseguire operazioni
     let kernel_height = kernel_shape[0] as usize;
     let kernel_width = kernel_shape[1] as usize;
@@ -200,10 +202,42 @@ where
     let output_shape = vec![input_shape[0], weights.dim()[0], output_height, output_width];
     let mut output = Array::<T, _>::zeros(IxDyn(&output_shape));
 
+    // Converti output in una vista mutabile
+    let mut output_view_mut = output.view_mut();
 
-    // Qui verrà implementata l'operazione di convoluzione...
+    // Utilizza par_iter_mut per iterare parallelamente sulla vista mutabile
+    output_view_mut.indexed_iter_mut().for_each(|(idx, output_element)| {
+        let (n, m, h, w) = (
+            idx[0],
+            idx[1],
+            idx[2],
+            idx[3],
+        );
 
-    unimplemented!() // Placeholder
+    let mut sum = T::zero();
+
+    for kh in 0..kernel_height {
+        for kw in 0..kernel_width {
+            // Calcola l'indice nel tensore di input imbottito
+            let h_idx = h * strides[0] as usize + kh;
+            let w_idx = w * strides[1] as usize + kw;
+
+            // Aggiungi la moltiplicazione elemento per elemento al sum
+            sum = sum + padded_input[[n, m, h_idx, w_idx]] * weights[[m, kh, kw]];
+        }
+    }
+
+    // Aggiungi il bias se presente
+    if let Some(b) = bias {
+        sum = sum + b[m];
+    }
+
+    // Assegna il valore calcolato al tensore di output
+    *output_element = sum;
+});
+
+    output
+
 }
 
 pub fn execute_onnx(
