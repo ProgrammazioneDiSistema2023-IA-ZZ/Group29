@@ -1,13 +1,10 @@
-use crate::onnx::{ModelProto, NodeProto, TensorProto};
+use crate::onnx::{ModelProto, NodeProto};
 use std::collections::HashMap;
-use ndarray::{Array2, Zip, Array, Dim, ArrayBase, Data, Ix1, Ix2, IxDyn, Dimension, Axis, OwnedRepr, s, prelude::*};
+use ndarray::{Array2, Zip, Array, ArrayBase, Ix1, IxDyn, Dimension, Axis, OwnedRepr, s};
 use std::ops::{Add, Div, Sub, Mul};
 use num_traits::float::Float;
-use std::cmp::{max, min};
-use std::iter::FromIterator;
-use num_traits::Zero;
-use rayon::prelude::*;
-use ndarray_parallel::prelude::*;
+use num_traits::{Zero, FromPrimitive};
+use ndarray::azip;
 
 // Funzione per stampare una lista di tensori
 pub fn print_tensors(tensors: Vec<Array2<f32>>) {
@@ -118,6 +115,41 @@ pub fn min_tensors(tensor_a: &Array2<f32>, tensor_b: &Array2<f32>) -> Array2<f32
 
     // Restituisci il risultato
     result_tensor
+}
+
+
+
+pub fn global_average_pool<T>(input: &Array<T, IxDyn>) -> Array<T, IxDyn>
+where
+    T: Clone + Default + std::ops::Add<Output = T> + From<f32> + std::ops::Div<Output = T> + Zero + FromPrimitive,
+{
+    let input_shape = input.dim();
+    if input_shape.ndim() < 3 {
+        panic!("Input tensor must have at least 3 dimensions (N x C x D1 x ... x Dn)");
+    }
+
+    let spatial_dim_product: f64 = input_shape.slice()[2..]
+        .iter()
+        .map(|&dim| dim as f64)
+        .product();
+    let spatial_dim_product: T = T::from_f64(spatial_dim_product).unwrap_or_else(T::zero);
+
+    let mut mean = input.to_owned();
+    for axis in (2..input_shape.ndim()).rev() {
+        mean = mean.mean_axis(Axis(axis)).unwrap();
+    }
+
+    let output_shape = vec![input_shape[0], input_shape[1], 1, 1];  // Per N x C x 1 x 1
+    let mut output = Array::default(IxDyn(&output_shape));
+
+    // Itera manualmente sugli elementi di output e mean
+    for n in 0..output_shape[0] {
+        for c in 0..output_shape[1] {
+            output[[n, c, 0, 0]] = mean[[n, c]].clone() / spatial_dim_product.clone();
+        }
+    }
+
+    output
 }
 
 pub fn concat<T>(tensors: Vec<Array<T, IxDyn>>, axis: isize) -> Array<T, IxDyn>
@@ -262,7 +294,6 @@ where
     for g in 0..num_groups {
         // Calcola gli indici di inizio e fine per il gruppo corrente
         let input_group_start = g * input_group_size;
-        let input_group_end = input_group_start + input_group_size;
         let weight_group_start = g * weight_group_size;
         let weight_group_end = weight_group_start + weight_group_size;
 
@@ -316,7 +347,6 @@ pub fn execute_onnx(
     let op_type = &node.op_type;
     let input_names = &node.input;
     let output_names = &node.output;
-    let attributes = &node.attribute;
 
     // Gestisci diverse operazioni in base al tipo di operatore (op_type)
     match op_type.as_str() {
