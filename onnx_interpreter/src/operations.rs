@@ -1,9 +1,10 @@
 use crate::onnx::{ModelProto, NodeProto, TensorProto};
 use std::collections::HashMap;
-use ndarray::{Array2, Zip, Array, Dim, ArrayBase, Data, Ix, IxDyn, Dimension, Axis, OwnedRepr};
+use ndarray::{Array2, Zip, Array, Dim, ArrayBase, Data, Ix1, Ix2, IxDyn, Dimension, Axis, OwnedRepr, s};
 use std::ops::{Add, Div, Sub, Mul};
 use num_traits::float::Float;
 use std::cmp::{max, min};
+use std::iter::FromIterator;
 
 // Funzione per stampare una lista di tensori
 pub fn print_tensors(tensors: Vec<Array2<f32>>) {
@@ -85,7 +86,6 @@ where
     tensor_a - tensor_b
 }
 
-
 // Divisione di due tensori
 pub fn div_tensors<T, D>(tensor_a: Array<T, D>, tensor_b: Array<T, D>) -> Array<T, D>
 where
@@ -117,6 +117,77 @@ pub fn min_tensors(tensor_a: &Array2<f32>, tensor_b: &Array2<f32>) -> Array2<f32
     result_tensor
 }
 
+// Funzione per eseguire ReLU elementwise
+pub fn relu<T, D>(input: &ArrayBase<OwnedRepr<T>, D>) -> Array<T, D>
+where
+    T: Ord + Default + Clone,
+    D: Dimension,
+    {
+        input.mapv(|x| max(x, T::default()))
+    }
+
+
+
+fn apply_padding<T>(input: &Array<T, IxDyn>, pads: &[i64]) -> Array<T, IxDyn>
+where
+    T: Default + Clone,
+{
+    // Assuming 2D convolution for simplicity. For higher dimensions, this needs to be extended.
+    let pad_top = pads[0] as usize;
+    let pad_left = pads[1] as usize;
+    let pad_bottom = pads[2] as usize;
+    let pad_right = pads[3] as usize;
+
+    let mut padded_shape = input.raw_dim();
+    padded_shape[2] += pad_top + pad_bottom; // Height dimension
+    padded_shape[3] += pad_left + pad_right; // Width dimension
+
+    let mut padded_input = Array::<T, _>::default(padded_shape);
+
+    // Copying the input tensor into the center of the padded tensor
+    let slice_s = s![
+        ..,
+        ..,
+        pad_top..(pad_top + input.shape()[2]),
+        pad_left..(pad_left + input.shape()[3])
+    ];
+    padded_input.slice_mut(slice_s).assign(input);
+
+    padded_input
+}
+
+ 
+// Funzione convolution aggiornata per includere il padding
+pub fn convolution<T>(
+    input: &Array<T, IxDyn>, // Input tensor X
+    weights: &Array<T, IxDyn>, // Weight tensor W
+    bias: Option<&Array<T, Ix1>>, // Optional Bias tensor B
+    auto_pad: &str, // auto_pad attribute
+    dilations: Vec<i64>, // dilations attribute
+    group: i64, // group attribute
+    kernel_shape: Vec<i64>, // kernel_shape attribute
+    pads: Vec<i64>, // pads attribute
+    strides: Vec<i64>, // strides attribute
+) -> Array<T, IxDyn>
+where
+    T: std::ops::Add<Output = T> + std::ops::Mul<Output = T> + Copy + Default + Clone,
+{
+    // Determina il padding necessario (esempio semplificato)
+    let actual_pads = if auto_pad != "NOTSET" {
+        // Calcola il padding basato su auto_pad, kernel_shape, e strides...
+        // Questa parte necessita di un'implementazione specifica
+        vec![0, 0, 0, 0] // Placeholder
+    } else {
+        pads
+    };
+
+    // Applica il padding al tensore di input
+    let padded_input = apply_padding(input, &actual_pads);
+
+    // Qui verrà implementata l'operazione di convoluzione...
+
+    unimplemented!() // Placeholder
+}
 
 pub fn execute_onnx(
     node: &NodeProto,
