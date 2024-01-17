@@ -3,8 +3,11 @@ use std::collections::HashMap;
 use ndarray::{Array2, Zip, Array, ArrayBase, Ix1, IxDyn, Dimension, Axis, OwnedRepr, s};
 use std::ops::{Add, Div, Sub, Mul};
 use num_traits::float::Float;
-use num_traits::{Zero, FromPrimitive};
-use ndarray::azip;
+use std::cmp::{max, min};
+use std::iter::FromIterator;
+use num_traits::Zero;
+use rayon::prelude::*;
+use ndarray_parallel::prelude::*;
 
 // Funzione per stampare una lista di tensori
 pub fn print_tensors(tensors: Vec<Array2<f32>>) {
@@ -13,22 +16,14 @@ pub fn print_tensors(tensors: Vec<Array2<f32>>) {
     }
 }
 
-// Moltiplicazione di due tensori
-pub fn multiply_tensors<A, D>(tensor_a: &Array<A, D>, tensor_b: &Array<A, D>) -> Array<A, D>
-where
-    A: Mul<Output = A> + Clone,
-    D: Dimension,
-{
+// Moltiplicazione di due tensori (element-wise)
+pub fn multiply<A: Mul<Output = A> + Clone, D: Dimension>(tensor_a: Array<A, D>, tensor_b: Array<A, D>) -> Array<A, D> {
     // Effettua la moltiplicazione dei tensori
     tensor_a * tensor_b
 }
 
-// Addizione di due tensori
-pub fn add_tensors<A, D>(tensor_a: &Array<A, D>, tensor_b: &Array<A, D>) -> Array<A, D>
-where
-    A: Add<Output = A> + Clone,
-    D: Dimension,
-{
+// Addizione di due tensori (element-wise)
+pub fn add<A: Add<Output = A> + Clone>(tensor_a: &Array<A, IxDyn>, tensor_b: &Array<A, IxDyn>) -> Array<A, IxDyn> {
     // Effettua la somma dei tensori
     tensor_a + tensor_b
 }

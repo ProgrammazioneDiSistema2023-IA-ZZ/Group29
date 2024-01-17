@@ -7,3 +7,7 @@ pub mod file;
 pub mod operations;
 
 pub mod interpreter;
+
+pub mod utils;
+
+pub mod array;
