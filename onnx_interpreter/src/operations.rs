@@ -5,6 +5,7 @@ use std::ops::{Add, Div, Sub, Mul};
 use num_traits::float::Float;
 use std::cmp::{max, min};
 use std::iter::FromIterator;
+use num_traits::Zero;
 
 // Funzione per stampare una lista di tensori
 pub fn print_tensors(tensors: Vec<Array2<f32>>) {
@@ -170,7 +171,7 @@ pub fn convolution<T>(
     strides: Vec<i64>, // strides attribute
 ) -> Array<T, IxDyn>
 where
-    T: std::ops::Add<Output = T> + std::ops::Mul<Output = T> + Copy + Default + Clone,
+    T: std::ops::Add<Output = T> + std::ops::Mul<Output = T> + Copy + Default + Clone + Zero,
 {
     // Determina il padding necessario (esempio semplificato)
     let actual_pads = if auto_pad != "NOTSET" {
@@ -183,6 +184,22 @@ where
 
     // Applica il padding al tensore di input
     let padded_input = apply_padding(input, &actual_pads);
+
+    // Calcola le dimensioni del tensore di output
+    let input_shape = padded_input.dim();
+    
+    // Converte tutti i valori coinvolti in usize prima di eseguire operazioni
+    let kernel_height = kernel_shape[0] as usize;
+    let kernel_width = kernel_shape[1] as usize;
+    let pad_top = actual_pads[0] as usize;
+    let pad_left = actual_pads[1] as usize;
+
+    let output_height = ((input_shape[2] - kernel_height + 2 * pad_top) / strides[0] as usize) + 1;
+    let output_width = ((input_shape[3] - kernel_width + 2 * pad_left) / strides[1] as usize) + 1;
+
+    let output_shape = vec![input_shape[0], weights.dim()[0], output_height, output_width];
+    let mut output = Array::<T, _>::zeros(IxDyn(&output_shape));
+
 
     // Qui verrà implementata l'operazione di convoluzione...
 
