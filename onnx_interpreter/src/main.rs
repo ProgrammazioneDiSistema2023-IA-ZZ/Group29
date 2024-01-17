@@ -1,39 +1,29 @@
 use std::collections::HashMap;
-use ndarray::Array2;
+use std::collections::HashSet;
 
 use onnx_interpreter::interpreter::execute_graph;
 use onnx_interpreter::onnx::*;
 use onnx_interpreter::file;
+use onnx_interpreter::utils::*;
 
 fn main() {
-    //Example of write and read any object
-    let path = "models/test.onnx";
-    let mut x = ModelProto::default();
-    x.producer_name = "test".to_string();
-
-    //Write
-    println!("Write object: \n{:?}\n", x);
-    file::write(&x, path).unwrap();
-
-    //Read
-    let y = file::read::<ModelProto>(path).unwrap();
-    println!("Read object: \n{:?}\n", y);    
-
-    //Example of read linear regression file
-    let path = "models/linear_regression.onnx";
+    //Read the model
+    let path = "models/mobilenet_v3_small_Opset18.onnx";
+    //let path = "models/resnet101-v1-7.onnx";
+    //let path = "models/vgg16-12.onnx";
     let model = file::read::<ModelProto>(path).unwrap();
+    let graph = model.graph.unwrap();
 
-    println!("Linear regression model: \n{:?}\n", model.graph);
+    let inputs = get_inputs(&graph).unwrap();
 
-    //Example of execute graph
-    let mut inputs = HashMap::new();
-    inputs.insert("X".to_string(), Array2::from_shape_vec((2, 2), vec![1.0, 2.0, 3.0, 4.0]).unwrap());
-    inputs.insert("A".to_string(), Array2::from_shape_vec((2, 2), vec![1.0, 2.0, 3.0, 4.0]).unwrap());
-    inputs.insert("B".to_string(), Array2::from_shape_vec((2, 2), vec![1.0, 2.0, 3.0, 4.0]).unwrap());
+    // for (name, tensor) in &inputs {
+    //     println!("Input: {:?}", name);
+    // }
 
-    let outputs = execute_graph(&model.graph.unwrap(), &mut inputs);
+    let ops = graph.node.iter().map(|node| node.op_type.clone()).collect::<HashSet<String>>();
+    println!("Operations: {:?}", ops);
 
     //Print outputs
-    outputs.iter().for_each(|(name, tensor)| println!("Output: {:?} \n{:?}", name, tensor));
+    //outputs.iter().for_each(|(name, tensor)| println!("Output: {:?} \n{:?}", name, tensor));
 
 }
