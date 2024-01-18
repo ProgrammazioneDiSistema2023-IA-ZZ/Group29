@@ -8,12 +8,15 @@ pub fn execute_node(node: &NodeProto, inputs:  &HashMap<String, ArrayMultiType>)
     let op_type = &node.op_type;
     let input_tensors = node.input.iter().map(|input| inputs.get(input).unwrap()).collect::<Vec<&ArrayMultiType>>();
     match op_type.as_str() {
-        "Add" => {
-            let output = ArrayMultiType::add(input_tensors[0], input_tensors[1]);
-            outputs.insert(node.output[0].clone(), output);
-        },
+        "Mul" => outputs.insert(node.output[0].clone(), ArrayMultiType::multiply(input_tensors[0], input_tensors[1])),
+        "Add" => outputs.insert(node.output[0].clone(), ArrayMultiType::add(input_tensors[0], input_tensors[1])),
+        "Greater" => outputs.insert(node.output[0].clone(), ArrayMultiType::greater(input_tensors[0], input_tensors[1])),
+        "GreaterOrEqual" => outputs.insert(node.output[0].clone(), ArrayMultiType::greater_or_equal(input_tensors[0], input_tensors[1])),
+        "Less" => outputs.insert(node.output[0].clone(), ArrayMultiType::less(input_tensors[0], input_tensors[1])),
+        "LessOrEqual" => outputs.insert(node.output[0].clone(), ArrayMultiType::less_or_equal(input_tensors[0], input_tensors[1])),
+        "MatMul" => outputs.insert(node.output[0].clone(), ArrayMultiType::matmul(input_tensors[0], input_tensors[1])),
         _ => return Err("Operation not supported")        
-    }
+    };
     // Print node information
     // println!("Node: {:?}", node.op_type);
     // input_tensors.iter().for_each(|tensor| println!("Input: \n{:?}", tensor));

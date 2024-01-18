@@ -8,7 +8,11 @@ use std::convert::TryFrom;
 use num_traits::{Zero, FromPrimitive};
 use rayon::prelude::*;
 use ndarray_parallel::prelude::*;
-use ndarray_stats::{SummaryStatisticsExt, Quantile1dExt};
+use ndarray::SliceInfoElem::Slice;
+
+// use crate::AutoPad::*;
+enum AutoPad {NOTSET, SAME_UPPER, SAME_LOWER, VALID}
+enum Error {KernelShapeDimensionError}
 
 // Funzione per stampare una lista di tensori
 pub fn print_tensors(tensors: Vec<Array2<f32>>) {
@@ -232,15 +236,17 @@ pub fn not(tensor: &ArrayBase<OwnedRepr<bool>, IxDyn>) -> ArrayBase<OwnedRepr<bo
 }
 
 // Moltiplicazione di matrici per tensori di dimensioni dinamiche
-pub fn matmul_tensors<S>(
-    arr1: &ArrayBase<S, Ix2>,
-    arr2: &ArrayBase<S, Ix2>,
-) -> Result<ArrayBase<OwnedRepr<f32>, Ix2>, &'static str>
+pub fn matmul<S>(
+    tensor_a: &ArrayBase<S, IxDyn>,
+    tensor_b: &ArrayBase<S, IxDyn>,
+) -> Result<ArrayBase<OwnedRepr<f32>, IxDyn>, &'static str>
 where
     S: Data<Elem = f32>,
-{
+{   
+    let tensor_1 = tensor_a.view().into_dimensionality().map_err(|_| "Tensor with wrong dimensionality")?;
+    let tensor_2 = tensor_b.view().into_dimensionality().map_err(|_| "Tensor with wrong dimensionality")?;
     // Verifica che le dimensioni delle matrici siano compatibili per la moltiplicazione
-    if arr1.ncols() != arr2.nrows() {
+    if tensor_1.ncols() != tensor_2.nrows() {
         return Err("Le dimensioni delle matrici non sono compatibili per la moltiplicazione.");
     }
 
@@ -360,6 +366,69 @@ where
     tensor.slice(slice_info.as_ref()).to_owned()
 }
 
+
+
+pub fn group_normalization<A>(input: &ArrayBase<OwnedRepr<A>, IxDyn>, num_groups: usize, epsilon: f32) -> ArrayBase<OwnedRepr<A>, IxDyn>
+where
+    A: Float + std::iter::Sum,
+{
+    let (batch_size, channels, ..) = (input.shape()[0], input.shape()[1]);
+    let group_size = channels / num_groups;
+
+    let mut normalized = input.to_owned();
+    for b in 0..batch_size {
+        for g in 0..num_groups {
+            let start = g * group_size;
+            let end = start + group_size;
+            let slice = s![b, start..end, .., ..];
+
+            let mean = input.slice(slice).mean_axis(Axis(0)).unwrap();
+            let variance = input.slice(slice).var_axis(Axis(0), A::zero());
+            let slice_normalized = input.slice(slice).map_axis(Axis(0), |row| {
+                let mean_row = mean.index_axis(Axis(0), row.axis());
+                let var_row = variance.index_axis(Axis(0), row.axis());
+                (row - mean_row) / (var_row + A::from(epsilon).unwrap()).sqrt()
+            });
+
+            normalized.slice_mut(slice).assign(&slice_normalized);
+        }
+    }
+
+    normalized
+}
+
+pub fn batch_normalization<A>(input: &ArrayBase<OwnedRepr<A>, IxDyn>, epsilon: f32) -> ArrayBase<OwnedRepr<A>, IxDyn>
+where
+    A: Float + std::iter::Sum,
+{
+    let mean = input.mean_axis(Axis(0)).unwrap();
+    let variance = input.var_axis(Axis(0), A::zero());
+    let normalized = input.map_axis(Axis(0), |batch| {
+        let mean_batch = mean.index_axis(Axis(0), batch.axis());
+        let var_batch = variance.index_axis(Axis(0), batch.axis());
+        (batch - mean_batch) / (var_batch + A::from(epsilon).unwrap()).sqrt()
+    });
+
+    normalized
+}
+
+
+
+pub fn layer_normalization<A>(input: &ArrayBase<OwnedRepr<A>, IxDyn>, epsilon: f32) -> ArrayBase<OwnedRepr<A>, IxDyn>
+where
+    A: Float + std::iter::Sum,
+{
+    let mean = input.mean_axis(Axis(1)).unwrap();
+    let variance = input.var_axis(Axis(1), A::zero());
+    let normalized = input.map_axis(Axis(1), |row| {
+        let mean_row = mean.index_axis(Axis(0), row.axis());
+        let var_row = variance.index_axis(Axis(0), row.axis());
+        (row - mean_row) / (var_row + A::from(epsilon).unwrap()).sqrt()
+    });
+
+    normalized
+}
+
 */
 
 
@@ -396,7 +465,7 @@ where
     output
 }
 
-pub fn concat<T>(tensors: Vec<Array<T, IxDyn>>, axis: isize) -> Array<T, IxDyn>
+pub fn concat<T>(tensors: Vec<&Array<T, IxDyn>>, axis: isize) -> Array<T, IxDyn>
 where
     T: Clone,
 {
@@ -581,6 +650,64 @@ where
     output
 
 }
+
+
+pub fn max_from_slice<T: PartialOrd + Copy> (slice: &ArrayViewD<T>) -> T {
+    let mut max = slice.get(0).unwrap().clone();
+    slice.for_each(|&x| if x>max {max=x} );
+    max
+}
+
+// pub fn max_pool<T: Sync + Send + Float> (tensor: &ArrayD<T>, auto_pad: Option<AutoPad>,
+//                                          ceil_mode: Option<bool>, dilations: Option<Vec<i64>>,
+//                                          kernel_shape: Vec<usize>, pads: Option<Vec<i64>>,
+//                                          storage_order: Option<bool>, strides: Option<Vec<isize>>) -> Result<ArrayD<T>, Error> {
+//     //todo: padding, dilation, storage_order
+
+//     if kernel_shape.len() != tensor.ndim() { return Err(Error::KernelShapeDimensionError) }
+//     let auto_pad = auto_pad.unwrap_or(NOTSET);
+//     let ceil_mode = ceil_mode.unwrap_or(false);
+//     let dilations = dilations.unwrap_or(vec![1; tensor.ndim()]);
+//     let pads = pads.unwrap_or(vec![0; 2*tensor.ndim()]);
+//     let storage_order = storage_order.unwrap_or(false);
+//     let strides = strides.unwrap_or(vec![1; tensor.ndim()]);
+
+//     //slice_shape = tensor_shape - kernel_shape
+//     let slice_shape = tensor.shape().iter()
+//         .zip(&kernel_shape).map(|(&a, &b)| a as isize - b as isize)
+//         .collect::<Vec<_>>();
+//     let slice_info = slice_shape.iter()
+//         .map(|&i| Slice{start: 0, step: 1, end: Some(i)})
+//         .collect::<Vec<_>>();
+//     let slice =
+//         tensor.slice::<SliceInfo<Vec<SliceInfoElem>, IxDyn, IxDyn>>(SliceInfo::try_from(slice_info).unwrap());
+
+
+//     //Viene creato un tensore di slice, ogni slice contiene gli elementi che deve considerare l'operatore max
+//     //map index -> SliceInfo -> Slice
+//     let tensor_of_slices =
+//         slice.indexed_iter()
+//             .map( |(d, _)|
+//                 d.as_array_view().iter()
+//                     .zip(&kernel_shape)
+//                     .map(|(&i, &j)| Slice{start: i as isize, step: 1, end: Some(i as isize + j as isize)}).collect::<Vec<_>>()
+//             ).map(|info| tensor.slice::<SliceInfo<Vec<SliceInfoElem>, IxDyn, IxDyn>>(SliceInfo::try_from(info).unwrap()))
+//             .collect::<Vec< ArrayViewD<T>>>();
+
+//     //Conversione da vec ad ArrayD
+//     let tensor_of_slices = ArrayD::from_shape_vec(slice.shape(), tensor_of_slices).unwrap();
+
+//     //Viene creata una slice del tensore tenendo conto degli stride
+//     let strides_slice_info = strides.iter()
+//         .map(|&i| Slice{start: 0, step: i, end: None})
+//         .collect::<Vec<_>>();
+//     let strides_slice =
+//         tensor_of_slices.slice::<SliceInfo<Vec<SliceInfoElem>, IxDyn, IxDyn>>(SliceInfo::try_from(strides_slice_info).unwrap());
+
+//     //Ad ogni slice viene applicato l'operatore max
+//     Ok(Zip::from(&strides_slice).par_map_collect(|x| max_from_slice(x)))
+// }
+
 
 pub fn transpose<A>(tensor: &ArrayBase<OwnedRepr<A>, IxDyn>, axes: Option<Vec<usize>>) -> ArrayBase<OwnedRepr<A>, IxDyn>
 where
