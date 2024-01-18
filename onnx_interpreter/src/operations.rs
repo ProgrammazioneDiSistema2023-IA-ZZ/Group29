@@ -1,10 +1,10 @@
 use crate::onnx::{ModelProto, NodeProto};
 use std::collections::HashMap;
-use ndarray::{Array2, ArrayD, Zip, Array, ArrayBase, Ix1, IxDyn, Ix2, Dimension, Axis, OwnedRepr, s, Data, ArrayViewMutD, SliceInfo, ArrayViewD, SliceInfoElem};
-use std::ops::{Add, Div, Sub, Mul};
+use ndarray::{Array2, ArrayD, Zip, Array, ArrayBase, Ix1, IxDyn, Ix2, Dimension, Axis, OwnedRepr, s, Data, DataMut, ScalarOperand, ArrayViewD};
+use std::ops::{Add, Sub, Mul};
 use num_traits::float::Float;
-use std::cmp::{max, min};
 use std::iter::FromIterator;
+use std::convert::TryFrom;
 use num_traits::{Zero, FromPrimitive};
 use rayon::prelude::*;
 use ndarray_parallel::prelude::*;
@@ -36,6 +36,119 @@ where
     A: Add<Output = A> + Clone,
 {
     tensor_a + tensor_b
+}
+
+// Sottrazione di due tensori (element-wise)
+pub fn sub_tensors<A, S>(tensor_a: &ArrayBase<S, IxDyn>, tensor_b: &ArrayBase<S, IxDyn>) -> ArrayD<A>
+where
+    A: Sub<Output = A> + Clone + Default,
+    S: Data<Elem = A>,
+{
+    // Broadcasting dei tensori per allineare le loro dimensioni
+    let tensor_a_broadcast = tensor_a.broadcast(tensor_b.raw_dim()).expect("Shape mismatch for broadcasting");
+    let tensor_b_broadcast = tensor_b.broadcast(tensor_a.raw_dim()).expect("Shape mismatch for broadcasting");
+
+    // Sottrazione elemento per elemento utilizzando Zip e map_collect
+    Zip::from(&tensor_a_broadcast)
+        .and(&tensor_b_broadcast)
+        .map_collect(|a, b| a.clone() - b.clone())
+}
+
+// Divisione di due tensori (element-wise)
+pub fn div_tensors_generic<A, S>(tensor_a: &ArrayBase<S, IxDyn>, tensor_b: &ArrayBase<S, IxDyn>) -> ArrayD<A>
+where
+    A: std::ops::Div<Output = A> + Clone + Default,
+    S: Data<Elem = A>,
+{
+    // Broadcasting dei tensori per allineare le loro dimensioni
+    let tensor_a_broadcast = tensor_a.broadcast(tensor_b.raw_dim()).expect("Shape mismatch for broadcasting");
+    let tensor_b_broadcast = tensor_b.broadcast(tensor_a.raw_dim()).expect("Shape mismatch for broadcasting");
+
+    // Divisione elemento per elemento utilizzando Zip e map_collect
+    Zip::from(&tensor_a_broadcast)
+        .and(&tensor_b_broadcast)
+        .map_collect(|a, b| a.clone() / b.clone())
+}
+
+
+
+// Massimizzazione di due tensori (element-wise)
+// Funzione ausiliaria per calcolare la forma di broadcasting
+fn compute_broadcast_shape(shapes: Vec<Vec<usize>>) -> Vec<usize> {
+    // Trova la lunghezza massima tra le forme
+    let max_len = shapes.iter().map(|s| s.len()).max().unwrap_or(0);
+
+    // Calcola la forma di broadcasting
+    (0..max_len).rev().map(|i| {
+        shapes.iter()
+            .filter_map(|s| s.get(s.len().checked_sub(i + 1).unwrap_or(0)))
+            .max()
+            .cloned()
+            .unwrap_or(1)
+    }).collect::<Vec<_>>().into_iter().rev().collect()
+}
+
+// Implementazione generica per l'operazione max tra più tensori
+pub fn max_tensors_generic<A, S>(tensors: &[ArrayBase<S, IxDyn>]) -> ArrayD<A>
+where
+    A: Clone + Default + PartialOrd,
+    S: Data<Elem = A>,
+{
+    if tensors.is_empty() {
+        panic!("At least one tensor is required for max operation");
+    }
+
+    // Calcola la forma di broadcasting
+    let shapes: Vec<_> = tensors.iter().map(|t| t.shape().to_vec()).collect();
+    let broadcast_shape = compute_broadcast_shape(shapes);
+    let broadcast_dim = IxDyn(&broadcast_shape);
+
+    // Inizializza il tensore risultante con il primo tensore, dopo aver applicato il broadcasting
+    let mut result = tensors[0].broadcast(broadcast_dim.clone()).unwrap().to_owned();
+
+    // Applica l'operazione max elemento per elemento
+    for tensor in &tensors[1..] {
+        let broadcasted_tensor = tensor.broadcast(broadcast_dim.clone()).unwrap();
+        result.zip_mut_with(&broadcasted_tensor, |r, t| {
+            if t > r {
+                *r = t.clone();
+            }
+        });
+    }
+
+    result
+}
+
+
+// Implementazione generica per l'operazione min tra più tensori
+pub fn min_tensors_generic<A, S>(tensors: &[ArrayBase<S, IxDyn>]) -> ArrayD<A>
+where
+    A: Clone + Default + PartialOrd,
+    S: Data<Elem = A>,
+{
+    if tensors.is_empty() {
+        panic!("At least one tensor is required for min operation");
+    }
+
+    // Calcola la forma di broadcasting
+    let shapes: Vec<_> = tensors.iter().map(|t| t.shape().to_vec()).collect();
+    let broadcast_shape = compute_broadcast_shape(shapes);
+    let broadcast_dim = IxDyn(&broadcast_shape);
+
+    // Inizializza il tensore risultante con il primo tensore, dopo aver applicato il broadcasting
+    let mut result = tensors[0].broadcast(broadcast_dim.clone()).unwrap().to_owned();
+
+    // Applica l'operazione min elemento per elemento
+    for tensor in &tensors[1..] {
+        let broadcasted_tensor = tensor.broadcast(broadcast_dim.clone()).unwrap();
+        result.zip_mut_with(&broadcasted_tensor, |r, t| {
+            if t < r {
+                *r = t.clone();
+            }
+        });
+    }
+
+    result
 }
 
 
@@ -109,16 +222,17 @@ where
 
 pub fn equal<A, S>(tensor_a: &ArrayBase<S, IxDyn>, tensor_b: &ArrayBase<S, IxDyn>) -> ArrayBase<OwnedRepr<bool>, IxDyn>
 where
-    A: Sync + Send + PartialOrd,
-    S: Data<Elem = A>,
+    A: Sync + Send + PartialEq,
+    S: ndarray::Data<Elem = A>,
 {
     Zip::from(tensor_a)
         .and(tensor_b)
-        .par_map_collect(|a, b| a==b)
+        .par_map_collect(|a, b| a == b)
 }
 
-pub fn not (tensor: &ArrayBase<OwnedRepr<bool>, IxDyn>) -> Array<bool, IxDyn> {
-    tensor.mapv(|x| !x)
+pub fn not(tensor: &ArrayBase<OwnedRepr<bool>, IxDyn>) -> ArrayBase<OwnedRepr<bool>, IxDyn> {
+    Zip::from(tensor)
+        .par_map_collect(|&x| !x)
 }
 
 // Moltiplicazione di matrici per tensori di dimensioni dinamiche
@@ -129,8 +243,9 @@ pub fn matmul<S>(
 where
     S: Data<Elem = f32>,
 {   
-    let tensor_1 = tensor_a.view().into_dimensionality().map_err(|_| "Tensor with wrong dimensionality")?;
-    let tensor_2 = tensor_b.view().into_dimensionality().map_err(|_| "Tensor with wrong dimensionality")?;
+    // Trasforma i tensori in Array2, che rappresenta una matrice 2D
+    let tensor_1 = tensor_a.view().into_dimensionality::<ndarray::Ix2>().map_err(|_| "Tensor A with wrong dimensionality")?;
+    let tensor_2 = tensor_b.view().into_dimensionality::<ndarray::Ix2>().map_err(|_| "Tensor B with wrong dimensionality")?;
     // Verifica che le dimensioni delle matrici siano compatibili per la moltiplicazione
     if tensor_1.ncols() != tensor_2.nrows() {
         return Err("Le dimensioni delle matrici non sono compatibili per la moltiplicazione.");
@@ -140,51 +255,106 @@ where
     Ok(tensor_1.dot(&tensor_2).into_dyn())
 }
 
-// Sottrazione di due tensori (element-wise)
+pub fn group_normalization<A>(input: &ArrayBase<OwnedRepr<A>, IxDyn>, num_groups: usize, epsilon: A) -> ArrayBase<OwnedRepr<A>, IxDyn>
+where
+    A: Float + From<f32> + std::iter::Sum + Default + FromPrimitive,
+{
+    let (batch_size, channels) = (input.shape()[0], input.shape()[1]);
+    let group_size = channels / num_groups;
+
+    let mut output = input.to_owned();
+
+    for b in 0..batch_size {
+        for g in 0..num_groups {
+            let start_channel = g * group_size;
+            let end_channel = start_channel + group_size;
+
+            let slice = s![b, start_channel..end_channel, ..];
+            let group_data = input.slice(slice);
+
+            let mean = group_data.mean_axis(Axis(1)).unwrap();
+            let variance = group_data.var_axis(Axis(1), A::zero());
+
+            let slice_mut = s![b, start_channel..end_channel, ..];
+            Zip::from(output.slice_mut(slice_mut))
+                .and(group_data)
+                .and_broadcast(&mean)
+                .and_broadcast(&variance)
+                .for_each(|o, &d, &m, &v| {
+                    *o = (d - m) / (v + epsilon).sqrt();
+                });
+        }
+    }
+
+    output
+}
+
+pub fn layer_normalization(
+    input: &ArrayBase<impl Data<Elem = f32>, IxDyn>,
+    scale: &ArrayBase<impl Data<Elem = f32>, IxDyn>,
+    bias: &ArrayBase<impl Data<Elem = f32>, IxDyn>,
+    axis: isize,
+    epsilon: f32,
+) -> ArrayBase<OwnedRepr<f32>, IxDyn> {
+    let axis = if axis < 0 {
+        input.ndim() as isize + axis
+    } else {
+        axis
+    } as usize;
+
+    // Calcolo della media e della varianza lungo l'asse specificato
+    let mean = input.mean_axis(Axis(axis)).expect("Failed to compute mean");
+    let variance = input.var_axis(Axis(axis), 0.0);
+
+    // Normalizzazione, ridimensionamento e spostamento
+    let mut output = ArrayBase::zeros(input.raw_dim());
+    Zip::from(&mut output)
+        .and(input)
+        .and_broadcast(&mean)
+        .and_broadcast(&variance)
+        .and_broadcast(scale)
+        .and_broadcast(bias)
+        .for_each(|o, &i, &m, &v, &s, &b| {
+            *o = s * ((i - m) / (v + epsilon).sqrt()) + b;
+        });
+
+    output
+}
+
 /* 
-pub fn sub_tensors<A, S>(
-    tensor_a: &ArrayBase<S, IxDyn>,
-    tensor_b: &ArrayBase<S, IxDyn>,
-) -> ArrayBase<S, IxDyn>
-where
-    A: std::ops::Sub<Output = A> + Clone,
-    S: Data<Elem = A>,
-{
-    Zip::from(tensor_a)
-        .and(tensor_b)
-        .map_collect(|&a, &b| a - b)
+pub fn batch_normalization(
+    input: &ArrayBase<impl Data<Elem = f32>, IxDyn>,
+    scale: &ArrayBase<impl Data<Elem = f32>, IxDyn>,
+    bias: &ArrayBase<impl Data<Elem = f32>, IxDyn>,
+    input_mean: &ArrayBase<impl Data<Elem = f32>, IxDyn>,
+    input_var: &ArrayBase<impl Data<Elem = f32>, IxDyn>,
+    epsilon: f32,
+    training_mode: bool,
+) -> Array<f32, IxDyn> {
+    let mean = if training_mode {
+        input.mean_axis(Axis(1)).unwrap().insert_axis(Axis(1))
+    } else {
+        input_mean.view().insert_axis(Axis(1))
+    };
+
+    let var = if training_mode {
+        input.var_axis(Axis(1), 0.0).insert_axis(Axis(1))
+    } else {
+        input_var.view().insert_axis(Axis(1))
+    };
+
+    // Calcolare la normalizzazione su ciascun batch
+    let normalized = Zip::from(input.view())
+        .and_broadcast(&mean)
+        .and_broadcast(&var)
+        .map_collect(|&x, &mean, &var| (x - mean) / ((var + epsilon).sqrt()));
+
+    // Applicare scale e bias
+    let scaled = &normalized * &scale.view();
+    let shifted = &scaled + &bias.view();
+
+    shifted.to_owned()
 }
-
-
-// Divisione di due tensori (element-wise)
-pub fn div_tensors<S>(tensor_a: &ArrayBase<S, IxDyn>, tensor_b: &ArrayBase<S, IxDyn>) -> ArrayBase<S, IxDyn>
-where
-    S: Data<Elem = f32>,
-{
-    tensor_a / tensor_b
-}
-
-
-// Massimizzazione di due tensori (element-wise)
-pub fn max_tensors<S>(tensor_a: &ArrayBase<S, IxDyn>, tensor_b: &ArrayBase<S, IxDyn>) -> ArrayBase<S, IxDyn>
-where
-    S: Data<Elem = f32>,
-{
-    Zip::from(tensor_a)
-        .and(tensor_b)
-        .par_map_collect(|&a, &b| a.max(b))
-}
-
-// Minimizzazione di due tensori (element-wise)
-pub fn min_tensors<S>(tensor_a: &ArrayBase<S, IxDyn>, tensor_b: &ArrayBase<S, IxDyn>) -> ArrayBase<S, IxDyn>
-where
-    S: Data<Elem = f32>,
-{
-    Zip::from(tensor_a)
-        .and(tensor_b)
-        .par_map_collect(|&a, &b| a.min(b))
-}
-
 
 
 
@@ -261,6 +431,7 @@ where
 }
 
 */
+
 
 pub fn global_average_pool<T>(input: &Array<T, IxDyn>) -> Array<T, IxDyn>
 where
