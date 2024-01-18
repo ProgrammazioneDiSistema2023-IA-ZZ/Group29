@@ -56,7 +56,7 @@ pub fn execute_node(node: &NodeProto, inputs:  &HashMap<String, ArrayMultiType>)
                 3.. => Some(input_tensors[2]),
                 _=> None
             };
-            let output = ArrayMultiType::convolution(input_tensors[0], input_tensors[1], bias, auto_pad, dilations, group, kernel_shape, pads, strides);
+            let output = ArrayMultiType::convolution(input_tensors[0], input_tensors[1], bias, &auto_pad, &dilations, group, &kernel_shape, &pads, &strides);
             outputs.insert(node.output[0].clone(), output)
         },
         "Relu" => outputs.insert(node.output[0].clone(), ArrayMultiType::relu(input_tensors[0])),

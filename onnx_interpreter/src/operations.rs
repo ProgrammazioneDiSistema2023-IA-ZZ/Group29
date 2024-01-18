@@ -1,15 +1,14 @@
 use crate::onnx::{ModelProto, NodeProto};
 use std::collections::HashMap;
-use ndarray::{Array2, ArrayD, Zip, Array, Array1, ArrayBase, Ix1, IxDyn, Ix2, Dimension, Axis, OwnedRepr, s, Data, DataMut, ScalarOperand, ArrayViewD};
+use ndarray::{Array2, ArrayD, Zip, Array, Array1, ArrayBase, Ix1, IxDyn, Ix2, Dimension, Axis, OwnedRepr, s, Data, DataMut, ScalarOperand, ArrayViewD, SliceInfo, SliceInfoElem, Slice};
 use std::ops::{Add, Sub, Mul};
 use num_traits::float::Float;
 use std::iter::FromIterator;
 use std::cmp;
-use std::convert::TryFrom;
-use num_traits::{Zero, FromPrimitive};
+use std::convert::{TryFrom, TryInto};
+use num_traits::{Zero, FromPrimitive, Bounded};
 use rayon::prelude::*;
 use ndarray_parallel::prelude::*;
-use ndarray::SliceInfoElem::Slice;
 
 // use crate::AutoPad::*;
 enum AutoPad {NOTSET, SAME_UPPER, SAME_LOWER, VALID}
@@ -576,6 +575,96 @@ pub fn layer_normalization(
         });
 
     output
+}
+
+// Funzione Slice
+pub fn slice_tensor(
+    tensor: &ArrayD<f32>,
+    starts: &[isize],
+    ends: &[isize],
+    axes: Option<&[isize]>,
+    steps: Option<&[isize]>,
+) -> ArrayD<f32> {
+    let ndim = tensor.ndim();
+
+    // Imposta gli assi e i passi se non specificati
+    let default_axes: Vec<_> = (0..ndim as isize).collect();
+    let axes = axes.unwrap_or(&default_axes);
+    let default_steps: Vec<_> = vec![1; starts.len()];
+    let steps = steps.unwrap_or(&default_steps);
+
+    // (Prossimi passaggi: gestione di starts, ends e slicing effettivo)
+
+    let mut slice_info_vec = Vec::new();
+
+for (&axis, (&start, &end)) in axes.iter().zip(starts.iter().zip(ends.iter())) {
+    let dim = tensor.shape()[axis as usize];
+
+    // Calcolo degli indici effettivi
+    let start = if start < 0 { start + dim as isize } else { start };
+    let end = if end < 0 { end + dim as isize } else { end };
+
+    // Limitazione degli indici
+    let start = start.clamp(0, dim as isize);
+    let end = end.clamp(0, dim as isize);
+
+    // Costruzione della slice per ogni asse
+    slice_info_vec.push(Slice::new(start, Some(end), steps[axis as usize]));
+}
+
+        let slice_info_elems = slice_info_vec.into_iter().map(SliceInfoElem::from).collect::<Vec<_>>();
+
+        // Utilizzo di un blocco unsafe per creare SliceInfo
+        let slice_info = unsafe {
+            SliceInfo::<_, IxDyn, IxDyn>::new(slice_info_elems).unwrap()
+        };
+
+        tensor.slice(slice_info.as_ref()).to_owned()
+
+}
+
+pub fn reduce_sum<S, A>(
+    data: &ArrayBase<S, IxDyn>,
+    axes: Option<&[i64]>,
+    keepdims: bool,
+    noop_with_empty_axes: bool,
+) -> ArrayD<A>
+where
+    S: Data<Elem = A>,
+    A: Clone + Zero + Add<Output = A> + FromPrimitive,
+{
+    let data_shape = data.shape();
+    let rank = data_shape.len();
+
+    // Convert axes to usize, handling negative values
+    let axes: Vec<usize> = match axes {
+        Some(ax) => ax.iter()
+            .map(|&a| if a < 0 { (rank as i64 + a) as usize } else { a as usize })
+            .collect(),
+        None => (0..rank).collect(),
+    };
+
+    // Return the input tensor if noop_with_empty_axes is true and axes is empty
+    if axes.is_empty() && noop_with_empty_axes {
+        return data.to_owned();
+    }
+
+    // Calculate the sum
+    let mut result = data.to_owned();
+    for &axis in &axes {
+        result = result.sum_axis(Axis(axis));
+    }
+
+    // Handle keepdims
+    if keepdims {
+        let mut shape = data_shape.to_vec();
+        for &axis in &axes {
+            shape[axis] = 1;
+        }
+        result = result.into_shape(IxDyn(&shape)).unwrap();
+    }
+
+    result
 }
 
 
