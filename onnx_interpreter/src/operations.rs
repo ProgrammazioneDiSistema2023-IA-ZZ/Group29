@@ -1,6 +1,6 @@
 use crate::onnx::{ModelProto, NodeProto};
 use std::collections::HashMap;
-use ndarray::{Array2, ArrayD, Zip, Array, ArrayBase, Ix1, IxDyn, Ix2, Dimension, Axis, OwnedRepr, s, Data, DataMut, ScalarOperand};
+use ndarray::{Array2, ArrayD, Zip, Array, ArrayBase, Ix1, IxDyn, Ix2, Dimension, Axis, OwnedRepr, s, Data, DataMut, ScalarOperand, ArrayViewD};
 use std::ops::{Add, Sub, Mul};
 use num_traits::float::Float;
 use std::iter::FromIterator;
@@ -243,15 +243,16 @@ pub fn matmul<S>(
 where
     S: Data<Elem = f32>,
 {   
-    let tensor_1 = tensor_a.view().into_dimensionality().map_err(|_| "Tensor with wrong dimensionality")?;
-    let tensor_2 = tensor_b.view().into_dimensionality().map_err(|_| "Tensor with wrong dimensionality")?;
+    // Trasforma i tensori in Array2, che rappresenta una matrice 2D
+    let tensor_1 = tensor_a.view().into_dimensionality::<ndarray::Ix2>().map_err(|_| "Tensor A with wrong dimensionality")?;
+    let tensor_2 = tensor_b.view().into_dimensionality::<ndarray::Ix2>().map_err(|_| "Tensor B with wrong dimensionality")?;
     // Verifica che le dimensioni delle matrici siano compatibili per la moltiplicazione
     if tensor_1.ncols() != tensor_2.nrows() {
         return Err("Le dimensioni delle matrici non sono compatibili per la moltiplicazione.");
     }
 
     // Esegui la moltiplicazione di matrici
-    Ok(arr1.dot(arr2))
+    Ok(tensor_1.dot(&tensor_2).into_dyn())
 }
 
 pub fn group_normalization<A>(input: &ArrayBase<OwnedRepr<A>, IxDyn>, num_groups: usize, epsilon: A) -> ArrayBase<OwnedRepr<A>, IxDyn>
