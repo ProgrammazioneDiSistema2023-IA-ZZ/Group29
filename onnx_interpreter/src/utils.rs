@@ -1,8 +1,10 @@
 use std::collections::HashMap;
 
+use crate::onnx::attribute_proto::AttributeType;
 use crate::onnx::type_proto::Value as ProtoValue;
-use crate::onnx::{ValueInfoProto, GraphProto, TensorProto};
+use crate::onnx::{ValueInfoProto, GraphProto, TensorProto, AttributeProto, NodeProto};
 use crate::array::ArrayMultiType;
+use crate::attribute::Attribute;
 
 fn init_array(initializer: &TensorProto) -> Result<(String, ArrayMultiType), &'static str> {  
     let array = if initializer.float_data.len() > 0 {
@@ -37,6 +39,7 @@ fn random_array(info: &ValueInfoProto) -> Result<(String, ArrayMultiType), &'sta
     let name = info.name.clone();
     Ok((name, array))
 }
+
 pub fn get_inputs(graph: &GraphProto) -> Result<HashMap<String, ArrayMultiType>, &'static str> {
     let mut inputs = HashMap::new();
     
@@ -55,5 +58,16 @@ pub fn get_inputs(graph: &GraphProto) -> Result<HashMap<String, ArrayMultiType>,
     Ok(inputs)
 }
 
+pub fn get_attributes(node: &NodeProto) -> Result<HashMap<String, Attribute>, &'static str> {
+    let mut attributes = HashMap::new();
+
+    for attribute in node.attribute.iter() {
+        let name = attribute.name.clone();
+        let attribute = Attribute::from_proto(&attribute)?;
+        attributes.insert(name, attribute);
+    }
+
+    Ok(attributes)
+}
 
 

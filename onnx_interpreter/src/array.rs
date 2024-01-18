@@ -346,7 +346,75 @@ impl ArrayMultiType {
             _ => panic!("Concat op does not support this data type")
         }
     }
+
+    pub fn relu(array: &ArrayMultiType) -> ArrayMultiType {
+        match array {
+            ArrayMultiType::FLOAT(a) => ArrayMultiType::FLOAT(relu(a)),
+            ArrayMultiType::UINT8(a) => ArrayMultiType::UINT8(relu(a)),
+            ArrayMultiType::INT8(a) => ArrayMultiType::INT8(relu(a)),
+            ArrayMultiType::UINT16(a) => ArrayMultiType::UINT16(relu(a)),
+            ArrayMultiType::INT16(a) => ArrayMultiType::INT16(relu(a)),
+            ArrayMultiType::INT32(a) => ArrayMultiType::INT32(relu(a)),
+            ArrayMultiType::INT64(a) => ArrayMultiType::INT64(relu(a)),
+            _ => panic!("Relu op does not support this data type")
+        }
+    }
+
+    pub fn convolution(
+        input: &ArrayMultiType, // Input tensor X
+        weights: &ArrayMultiType, // Weight tensor W
+        bias: Option<&ArrayMultiType>, // Optional Bias tensor B
+        auto_pad: &str, // auto_pad attribute
+        dilations: &Vec<i64>, // dilations attribute
+        group: i64, // group attribute
+        kernel_shape: &Vec<i64>, // kernel_shape attribute
+        pads: &Vec<i64>, // pads attribute
+        strides: &Vec<i64>, // strides attribute
+    ) -> ArrayMultiType {
+        match (input, weights, bias) {
+            (ArrayMultiType::FLOAT(input), ArrayMultiType::FLOAT(weights), Some(ArrayMultiType::FLOAT(bias))) => {
+                ArrayMultiType::FLOAT(convolution(input, weights, Some(bias), auto_pad, dilations, group, kernel_shape, pads, strides))
+            },
+            (ArrayMultiType::FLOAT(input), ArrayMultiType::FLOAT(weights), None) => {
+                ArrayMultiType::FLOAT(convolution(input, weights, None, auto_pad, dilations, group, kernel_shape, pads, strides))
+            },
+            (ArrayMultiType::UINT8(input), ArrayMultiType::UINT8(weights), Some(ArrayMultiType::UINT8(bias))) => {
+                ArrayMultiType::UINT8(convolution(input, weights, Some(bias), auto_pad, dilations, group, kernel_shape, pads, strides))
+            },
+            (ArrayMultiType::UINT8(input), ArrayMultiType::UINT8(weights), None) => {
+                ArrayMultiType::UINT8(convolution(input, weights, None, auto_pad, dilations, group, kernel_shape, pads, strides))
+            },
+            (ArrayMultiType::INT8(input), ArrayMultiType::INT8(weights), Some(ArrayMultiType::INT8(bias))) => {
+                ArrayMultiType::INT8(convolution(input, weights, Some(bias), auto_pad, dilations, group, kernel_shape, pads, strides))
+            },
+            (ArrayMultiType::INT8(input), ArrayMultiType::INT8(weights), None) => {
+                ArrayMultiType::INT8(convolution(input, weights, None, auto_pad, dilations, group, kernel_shape, pads, strides))
+            },
+            (ArrayMultiType::UINT16(input), ArrayMultiType::UINT16(weights), Some(ArrayMultiType::UINT16(bias))) => {
+                ArrayMultiType::UINT16(convolution(input, weights, Some(bias), auto_pad, dilations, group, kernel_shape, pads, strides))
+            },
+            (ArrayMultiType::UINT16(input), ArrayMultiType::UINT16(weights), None) => {
+                ArrayMultiType::UINT16(convolution(input, weights, None, auto_pad, dilations, group, kernel_shape, pads, strides))
+            },
+            (ArrayMultiType::INT16(input), ArrayMultiType::INT16(weights), Some(ArrayMultiType::INT16(bias))) => {
+                ArrayMultiType::INT16(convolution(input, weights, Some(bias), auto_pad, dilations, group, kernel_shape, pads, strides))
+            },
+            (ArrayMultiType::INT16(input), ArrayMultiType::INT16(weights), None) => {
+                ArrayMultiType::INT16(convolution(input, weights, None, auto_pad, dilations, group, kernel_shape, pads, strides))
+            },
+            (ArrayMultiType::INT32(input), ArrayMultiType::INT32(weights), Some(ArrayMultiType::INT32(bias))) => {
+                ArrayMultiType::INT32(convolution(input, weights, Some(bias), auto_pad, dilations, group, kernel_shape, pads, strides))
+            },
+            (ArrayMultiType::INT32(input), ArrayMultiType::INT32(weights), None) => {
+                ArrayMultiType::INT32(convolution(input, weights, None, auto_pad, dilations, group, kernel_shape, pads, strides))
+            },
+            (ArrayMultiType::INT64(input), ArrayMultiType::INT64(weights), Some(ArrayMultiType::INT64(bias))) => {
+                ArrayMultiType::INT64(convolution(input, weights, Some(bias), auto_pad, dilations, group, kernel_shape, pads, strides))
+            },
+            (ArrayMultiType::INT64(input), ArrayMultiType::INT64(weights), None) => {
+                ArrayMultiType::INT64(convolution(input, weights, None, auto_pad, dilations, group, kernel_shape, pads, strides))
+            },
+            _ => panic!("Convolution op does not support this data type")
+        }
+    }
 }
-
-
-            
