@@ -103,20 +103,22 @@ where
 }
 
 // Moltiplicazione di matrici per tensori di dimensioni dinamiche
-pub fn matmul_tensors<S>(
-    arr1: &ArrayBase<S, Ix2>,
-    arr2: &ArrayBase<S, Ix2>,
-) -> Result<ArrayBase<OwnedRepr<f32>, Ix2>, &'static str>
+pub fn matmul<S>(
+    tensor_a: &ArrayBase<S, IxDyn>,
+    tensor_b: &ArrayBase<S, IxDyn>,
+) -> Result<ArrayBase<OwnedRepr<f32>, IxDyn>, &'static str>
 where
     S: Data<Elem = f32>,
-{
+{   
+    let tensor_1 = tensor_a.view().into_dimensionality().map_err(|_| "Tensor with wrong dimensionality")?;
+    let tensor_2 = tensor_b.view().into_dimensionality().map_err(|_| "Tensor with wrong dimensionality")?;
     // Verifica che le dimensioni delle matrici siano compatibili per la moltiplicazione
-    if arr1.ncols() != arr2.nrows() {
+    if tensor_1.ncols() != tensor_2.nrows() {
         return Err("Le dimensioni delle matrici non sono compatibili per la moltiplicazione.");
     }
 
     // Esegui la moltiplicazione di matrici
-    Ok(arr1.dot(arr2))
+    Ok(tensor_1.dot(&tensor_2).into_dyn())
 }
 
 // Sottrazione di due tensori (element-wise)

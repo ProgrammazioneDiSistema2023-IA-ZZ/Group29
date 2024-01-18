@@ -8,9 +8,9 @@ use onnx_interpreter::utils::*;
 
 fn main() {
     //Read the model
-    let path = "models/mobilenet_v3_small_Opset18.onnx";
-    //let path = "models/resnet101-v1-7.onnx";
-    //let path = "models/vgg16-12.onnx";
+    //let path = "models/mobilenetv2-12.onnx";
+    let path = "models/shufflenet-v2-12.onnx";
+
     let model = file::read::<ModelProto>(path).unwrap();
     let graph = model.graph.unwrap();
 
