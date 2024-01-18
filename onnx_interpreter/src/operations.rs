@@ -1,9 +1,10 @@
 use crate::onnx::{ModelProto, NodeProto};
 use std::collections::HashMap;
-use ndarray::{Array2, ArrayD, Zip, Array, ArrayBase, Ix1, IxDyn, Ix2, Dimension, Axis, OwnedRepr, s, Data, DataMut, ScalarOperand, ArrayViewD};
+use ndarray::{Array2, ArrayD, Zip, Array, Array1, ArrayBase, Ix1, IxDyn, Ix2, Dimension, Axis, OwnedRepr, s, Data, DataMut, ScalarOperand, ArrayViewD};
 use std::ops::{Add, Sub, Mul};
 use num_traits::float::Float;
 use std::iter::FromIterator;
+use std::cmp;
 use std::convert::TryFrom;
 use num_traits::{Zero, FromPrimitive};
 use rayon::prelude::*;
@@ -255,6 +256,262 @@ where
     Ok(tensor_1.dot(&tensor_2).into_dyn())
 }
 
+// Funzione per trovare gli indici degli elementi non zero di un tensore
+pub fn non_zero<S, A>(tensor: &ArrayBase<S, IxDyn>) -> ArrayD<i64>
+where
+    S: Data<Elem = A>,
+    A: PartialEq + num_traits::Zero + Copy,
+{
+    let mut non_zero_indices = Vec::new();
+
+    // Itera su tutti gli elementi del tensore
+    for (index, &item) in tensor.indexed_iter() {
+        if item != A::zero() {
+            // Converti gli indici in i64 e aggiungili al vettore
+            let idx_i64: Vec<i64> = index.slice().iter().map(|&x| x as i64).collect();
+            non_zero_indices.push(idx_i64);
+        }
+    }
+
+    // Converti il vettore di vettori in un ArrayD
+    let shape = IxDyn(&[non_zero_indices.len(), tensor.ndim()]);
+    ArrayD::from_shape_vec(shape, non_zero_indices.into_iter().flatten().collect()).unwrap()
+}
+
+// Funzione per generare un tensore di una forma specificata con un valore costante
+pub fn constant_of_shape(shape: &Array1<i64>, value: Option<&ArrayD<f32>>) -> ArrayD<f32> {
+    let shape_usize: Vec<usize> = shape.iter().map(|&dim| usize::try_from(dim).unwrap()).collect();
+    let default_value = Array::from_elem(shape_usize.as_slice(), 0.0);
+
+    match value {
+        Some(val) => {
+            if val.len() == 1 {
+                let constant_value = val[[0]];
+                Array::from_elem(shape_usize.as_slice(), constant_value)
+            } else {
+                panic!("Value tensor must have exactly one element.");
+            }
+        },
+        None => default_value,
+    }
+}
+
+pub fn squeeze<A>(data: &ArrayBase<impl Data<Elem = A>, IxDyn>, axes: Option<&[i64]>) -> ArrayBase<OwnedRepr<A>, IxDyn>
+where
+    A: Clone,
+{
+    let mut squeezed = data.view();
+
+    match axes {
+        Some(axes) => {
+            let axes: Vec<usize> = axes.iter()
+                .map(|&axis| if axis < 0 { (data.ndim() as i64 + axis) as usize } else { axis as usize })
+                .collect();
+
+            for &axis in axes.iter().rev() {
+                if data.shape()[axis] == 1 {
+                    squeezed = squeezed.index_axis_move(Axis(axis), 0);
+                }
+            }
+        }
+        None => {
+            for axis in (0..data.ndim()).rev() {
+                if data.shape()[axis] == 1 {
+                    squeezed = squeezed.index_axis_move(Axis(axis), 0);
+                }
+            }
+        }
+    }
+
+    // Invece di convertire in un array di proprietà, restituire la vista risultante
+    squeezed.to_owned()
+}
+
+pub fn unsqueeze<A>(data: &Array<A, IxDyn>, axes: &[i64]) -> ArrayD<A>
+where
+    A: Clone,
+{
+    let mut expanded_data = data.view();
+    let mut added_axes = 0usize; // Usa usize per added_axes
+
+    for &axis in axes.iter() {
+        // Calcola l'indice assoluto tenendo conto degli assi già aggiunti
+        let abs_axis = if axis < 0 {
+            (data.ndim() as i64 + axis + 1 + added_axes as i64) as usize
+        } else {
+            (axis as usize) + added_axes
+        };
+
+        // Inserisci la nuova dimensione
+        expanded_data = expanded_data.insert_axis(Axis(abs_axis));
+        added_axes += 1;
+    }
+
+    expanded_data.to_owned()
+}
+
+pub fn softmax<A>(input: &Array<A, IxDyn>, axis: isize) -> ArrayD<A>
+where
+    A: Float,
+{
+    let axis = if axis < 0 {
+        // Converti l'asse negativo in un indice positivo
+        input.ndim() as isize + axis
+    } else {
+        axis
+    } as usize;
+
+    // Calcola l'esponenziale di ciascun elemento nel tensore
+    let exp: ArrayD<A> = input.mapv(|a| a.exp());
+
+    // Somma tutti gli esponenziali lungo l'asse specificato
+    let sum_exp = exp.sum_axis(Axis(axis));
+
+    // Crea una variabile intermedia per conservare il risultato di insert_axis
+    let sum_exp_with_axis = sum_exp.insert_axis(Axis(axis));
+    
+    // Effettua il broadcast della somma lungo l'asse per allineare le dimensioni
+    let sum_exp_broadcast = sum_exp_with_axis.broadcast(exp.dim()).unwrap();
+
+    // Calcola il Softmax dividendo ciascun esponenziale per la somma degli esponenziali lungo l'asse
+    exp / sum_exp_broadcast
+}
+
+pub fn shape<S>(data: &ArrayBase<S, IxDyn>, start: Option<isize>, end: Option<isize>) -> Vec<i64>
+where
+    S: Data,
+{
+    let rank = data.ndim() as isize;
+    let start_idx = start.unwrap_or(0).clamp(-rank, rank - 1);
+    let end_idx = end.unwrap_or(rank).clamp(-rank, rank);
+
+    // Ajusta gli indici in caso di valori negativi
+    let start_idx = if start_idx >= 0 { start_idx as usize } else { (rank + start_idx) as usize };
+    let end_idx = if end_idx >= 0 { end_idx as usize } else { (rank + end_idx) as usize };
+
+    data.shape()[start_idx..end_idx].iter().map(|&d| d as i64).collect()
+}
+
+pub fn reshape<S>(data: &ArrayBase<S, IxDyn>, new_shape: &[i64]) -> ArrayBase<OwnedRepr<f32>, IxDyn>
+where
+    S: Data<Elem = f32>,
+{
+    let mut new_shape_usize: Vec<usize> = Vec::with_capacity(new_shape.len());
+    let mut negative_one_index: Option<usize> = None;
+    let mut elements_count = 1;
+
+    for (i, &dim) in new_shape.iter().enumerate() {
+        match dim {
+            -1 => {
+                if negative_one_index.is_some() {
+                    panic!("Only one dimension can be -1");
+                }
+                negative_one_index = Some(i);
+                new_shape_usize.push(0); // Placeholder value
+            }
+            0 => {
+                new_shape_usize.push(data.shape()[i]);
+                elements_count *= data.shape()[i];
+            }
+            _ => {
+                let dim_usize = usize::try_from(dim).expect("Negative dimensions are not allowed");
+                new_shape_usize.push(dim_usize);
+                elements_count *= dim_usize;
+            }
+        }
+    }
+
+    if let Some(idx) = negative_one_index {
+        let original_elements_count: usize = data.iter().count();
+        if original_elements_count % elements_count != 0 {
+            panic!("Invalid shape for Reshape");
+        }
+        new_shape_usize[idx] = original_elements_count / elements_count;
+    }
+
+    let reshaped = data.view().into_shape(new_shape_usize).expect("Invalid shape for Reshape").to_owned();
+    reshaped.into_dyn()
+}
+
+pub fn expand<S>(input: &ArrayBase<S, IxDyn>, new_shape: &[i64]) -> ArrayBase<OwnedRepr<f32>, IxDyn>
+where
+    S: Data<Elem = f32>,
+{
+    let input_shape = input.shape();
+    let mut expanded_shape = Vec::new();
+
+    // Calcola la forma espansa tenendo conto del broadcasting
+    for (input_dim, &expand_dim) in input_shape.iter().rev().zip(new_shape.iter().rev()) {
+        match expand_dim {
+            1 => expanded_shape.push(*input_dim),
+            _ => expanded_shape.push(expand_dim as usize),
+        }
+    }
+
+    expanded_shape.reverse();
+
+    // Crea un nuovo tensore con la forma espansa e copia i dati secondo le regole del broadcasting
+    let expanded = ArrayBase::from_elem(expanded_shape, 0.0f32);
+    let mut expanded = expanded.into_dyn();
+    Zip::from(&mut expanded)
+        .and_broadcast(input)
+        .for_each(|exp, &inp| *exp = inp);
+
+    expanded
+}
+
+pub fn clip<S, A>(
+    input: &ArrayBase<S, IxDyn>,
+    min: Option<A>,
+    max: Option<A>,
+) -> ArrayBase<OwnedRepr<A>, IxDyn>
+where
+    S: Data<Elem = A>,
+    A: PartialOrd + Copy + FromPrimitive,
+{
+    let min_val = min.unwrap_or_else(|| A::from_f32(std::f32::MIN).unwrap());
+    let max_val = max.unwrap_or_else(|| A::from_f32(std::f32::MAX).unwrap());
+
+    input.mapv(|x| {
+        if x < min_val {
+            min_val
+        } else if x > max_val {
+            max_val
+        } else {
+            x
+        }
+    })
+}
+
+pub fn scatter_elements<S, A>(
+    data: &ArrayBase<S, IxDyn>,
+    indices: &ArrayBase<OwnedRepr<i64>, IxDyn>,
+    updates: &ArrayBase<S, IxDyn>,
+    axis: Option<usize>,
+    reduction: Option<&str>,
+) -> ArrayBase<OwnedRepr<A>, IxDyn>
+where
+    S: Data<Elem = A>,
+    A: Default + Clone + PartialOrd + std::ops::AddAssign + std::ops::MulAssign,
+{
+    let mut output = data.to_owned();
+    let axis = axis.unwrap_or(0);
+    let reduction = reduction.unwrap_or("none");
+
+    for ((idx, update), &index) in updates.indexed_iter().zip(indices.iter()) {
+        let mut target_idx = idx.clone();
+        target_idx.slice_mut()[axis] = cmp::min(index as usize, data.shape()[axis] - 1);
+
+        match reduction {
+            "add" => output[target_idx] += update.clone(),
+            "mul" => output[target_idx] *= update.clone(),
+            "none" | _ => output[target_idx] = update.clone(),
+        }
+    }
+
+    output
+}
+
 pub fn group_normalization<A>(input: &ArrayBase<OwnedRepr<A>, IxDyn>, num_groups: usize, epsilon: A) -> ArrayBase<OwnedRepr<A>, IxDyn>
 where
     A: Float + From<f32> + std::iter::Sum + Default + FromPrimitive,
@@ -320,6 +577,7 @@ pub fn layer_normalization(
 
     output
 }
+
 
 /* 
 pub fn batch_normalization(
