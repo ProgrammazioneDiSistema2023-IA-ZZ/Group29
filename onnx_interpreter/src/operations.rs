@@ -1,11 +1,11 @@
 use crate::onnx::{ModelProto, NodeProto};
 use std::collections::HashMap;
-use ndarray::{Array2, Zip, Array, ArrayBase, Ix1, IxDyn, Dimension, Axis, OwnedRepr, s, Data};
+use ndarray::{Array2, ArrayD, Zip, Array, ArrayBase, Ix1, IxDyn, Ix2, Dimension, Axis, OwnedRepr, s, Data, ArrayViewMutD, SliceInfo};
 use std::ops::{Add, Div, Sub, Mul};
 use num_traits::float::Float;
 use std::cmp::{max, min};
 use std::iter::FromIterator;
-use num_traits::Zero;
+use num_traits::{Zero, FromPrimitive};
 use rayon::prelude::*;
 use ndarray_parallel::prelude::*;
 
@@ -60,10 +60,9 @@ where
     tensor.mapv(|x| x.ln())
 }
 
-
 //Operatori logici
 // Comparazione elemento per elemento di due tensori, restituisce un tensore di booleani
-pub fn greater<A, S>(tensor_a: &ArrayBase<S, IxDyn>, tensor_b: &ArrayBase<S, IxDyn>) -> ArrayBase<S, IxDyn>
+pub fn greater<A, S>(tensor_a: &ArrayBase<S, IxDyn>, tensor_b: &ArrayBase<S, IxDyn>) -> ArrayBase<OwnedRepr<bool>, IxDyn>
 where
     A: Sync + Send + PartialOrd,
     S: Data<Elem = A>,
@@ -73,7 +72,7 @@ where
         .par_map_collect(|a, b| a > b)
 }
 
-pub fn greater_or_equal<A, S>(tensor_a: &ArrayBase<S, IxDyn>, tensor_b: &ArrayBase<S, IxDyn>) -> ArrayBase<S, IxDyn> 
+pub fn greater_or_equal<A, S>(tensor_a: &ArrayBase<S, IxDyn>, tensor_b: &ArrayBase<S, IxDyn>) -> ArrayBase<OwnedRepr<bool>, IxDyn>
 where
     A: Sync + Send + PartialOrd,
     S: Data<Elem = A>,
@@ -83,7 +82,7 @@ where
         .par_map_collect(|a, b| a>=b)
 }
 
-pub fn less<A, S>(tensor_a: &ArrayBase<S, IxDyn>, tensor_b: &ArrayBase<S, IxDyn>) -> ArrayBase<S, IxDyn> 
+pub fn less<A, S>(tensor_a: &ArrayBase<S, IxDyn>, tensor_b: &ArrayBase<S, IxDyn>) -> ArrayBase<OwnedRepr<bool>, IxDyn>
 where
     A: Sync + Send + PartialOrd,
     S: Data<Elem = A>,
@@ -93,7 +92,7 @@ where
         .par_map_collect(|a, b| a<b)
 }
 
-pub fn less_or_equal<A, S>(tensor_a: &ArrayBase<S, IxDyn>, tensor_b: &ArrayBase<S, IxDyn>) -> ArrayBase<S, IxDyn> 
+pub fn less_or_equal<A, S>(tensor_a: &ArrayBase<S, IxDyn>, tensor_b: &ArrayBase<S, IxDyn>) -> ArrayBase<OwnedRepr<bool>, IxDyn>
 where
     A: Sync + Send + PartialOrd,
     S: Data<Elem = A>,
@@ -104,20 +103,37 @@ where
 }
 
 // Moltiplicazione di matrici per tensori di dimensioni dinamiche
-pub fn matmul_tensors<S>(arr1: &ArrayBase<S, IxDyn>, arr2: &ArrayBase<S, IxDyn>) -> ArrayBase<S, IxDyn>
+pub fn matmul_tensors<S>(
+    arr1: &ArrayBase<S, Ix2>,
+    arr2: &ArrayBase<S, Ix2>,
+) -> Result<ArrayBase<OwnedRepr<f32>, Ix2>, &'static str>
 where
     S: Data<Elem = f32>,
 {
-    arr1.dot(arr2)
+    // Verifica che le dimensioni delle matrici siano compatibili per la moltiplicazione
+    if arr1.ncols() != arr2.nrows() {
+        return Err("Le dimensioni delle matrici non sono compatibili per la moltiplicazione.");
+    }
+
+    // Esegui la moltiplicazione di matrici
+    Ok(arr1.dot(arr2))
 }
 
 // Sottrazione di due tensori (element-wise)
-pub fn sub_tensors<S>(tensor_a: &ArrayBase<S, IxDyn>, tensor_b: &ArrayBase<S, IxDyn>) -> ArrayBase<S, IxDyn>
+/* 
+pub fn sub_tensors<A, S>(
+    tensor_a: &ArrayBase<S, IxDyn>,
+    tensor_b: &ArrayBase<S, IxDyn>,
+) -> ArrayBase<S, IxDyn>
 where
-    S: Data<Elem = f32>,
+    A: std::ops::Sub<Output = A> + Clone,
+    S: Data<Elem = A>,
 {
-    tensor_a - tensor_b
+    Zip::from(tensor_a)
+        .and(tensor_b)
+        .map_collect(|&a, &b| a - b)
 }
+
 
 // Divisione di due tensori (element-wise)
 pub fn div_tensors<S>(tensor_a: &ArrayBase<S, IxDyn>, tensor_b: &ArrayBase<S, IxDyn>) -> ArrayBase<S, IxDyn>
@@ -126,6 +142,7 @@ where
 {
     tensor_a / tensor_b
 }
+
 
 // Massimizzazione di due tensori (element-wise)
 pub fn max_tensors<S>(tensor_a: &ArrayBase<S, IxDyn>, tensor_b: &ArrayBase<S, IxDyn>) -> ArrayBase<S, IxDyn>
@@ -146,6 +163,83 @@ where
         .and(tensor_b)
         .par_map_collect(|&a, &b| a.min(b))
 }
+
+
+
+
+pub fn slice<A, Din, Dout>(tensor: &ArrayBase<OwnedRepr<A>, Din>, slice_info: &SliceInfo<A, Din, Dout>) -> ArrayBase<OwnedRepr<A>, Dout>
+where
+    A: Clone,
+    Din: Dimension,
+    Dout: Dimension,
+{
+    tensor.slice(slice_info.as_ref()).to_owned()
+}
+
+
+
+pub fn group_normalization<A>(input: &ArrayBase<OwnedRepr<A>, IxDyn>, num_groups: usize, epsilon: f32) -> ArrayBase<OwnedRepr<A>, IxDyn>
+where
+    A: Float + std::iter::Sum,
+{
+    let (batch_size, channels, ..) = (input.shape()[0], input.shape()[1]);
+    let group_size = channels / num_groups;
+
+    let mut normalized = input.to_owned();
+    for b in 0..batch_size {
+        for g in 0..num_groups {
+            let start = g * group_size;
+            let end = start + group_size;
+            let slice = s![b, start..end, .., ..];
+
+            let mean = input.slice(slice).mean_axis(Axis(0)).unwrap();
+            let variance = input.slice(slice).var_axis(Axis(0), A::zero());
+            let slice_normalized = input.slice(slice).map_axis(Axis(0), |row| {
+                let mean_row = mean.index_axis(Axis(0), row.axis());
+                let var_row = variance.index_axis(Axis(0), row.axis());
+                (row - mean_row) / (var_row + A::from(epsilon).unwrap()).sqrt()
+            });
+
+            normalized.slice_mut(slice).assign(&slice_normalized);
+        }
+    }
+
+    normalized
+}
+
+pub fn batch_normalization<A>(input: &ArrayBase<OwnedRepr<A>, IxDyn>, epsilon: f32) -> ArrayBase<OwnedRepr<A>, IxDyn>
+where
+    A: Float + std::iter::Sum,
+{
+    let mean = input.mean_axis(Axis(0)).unwrap();
+    let variance = input.var_axis(Axis(0), A::zero());
+    let normalized = input.map_axis(Axis(0), |batch| {
+        let mean_batch = mean.index_axis(Axis(0), batch.axis());
+        let var_batch = variance.index_axis(Axis(0), batch.axis());
+        (batch - mean_batch) / (var_batch + A::from(epsilon).unwrap()).sqrt()
+    });
+
+    normalized
+}
+
+
+
+pub fn layer_normalization<A>(input: &ArrayBase<OwnedRepr<A>, IxDyn>, epsilon: f32) -> ArrayBase<OwnedRepr<A>, IxDyn>
+where
+    A: Float + std::iter::Sum,
+{
+    let mean = input.mean_axis(Axis(1)).unwrap();
+    let variance = input.var_axis(Axis(1), A::zero());
+    let normalized = input.map_axis(Axis(1), |row| {
+        let mean_row = mean.index_axis(Axis(0), row.axis());
+        let var_row = variance.index_axis(Axis(0), row.axis());
+        (row - mean_row) / (var_row + A::from(epsilon).unwrap()).sqrt()
+    });
+
+    normalized
+}
+
+*/
 
 
 pub fn global_average_pool<T>(input: &Array<T, IxDyn>) -> Array<T, IxDyn>
@@ -367,6 +461,63 @@ where
 
 }
 
+pub fn transpose<A>(tensor: &ArrayBase<OwnedRepr<A>, IxDyn>, axes: Option<Vec<usize>>) -> ArrayBase<OwnedRepr<A>, IxDyn>
+where
+    A: Clone,
+{
+    match axes {
+        Some(axes) => tensor.to_owned().permuted_axes(axes),  // Clona il tensore qui
+        None => tensor.t().to_owned(),
+    }
+}
+
+
+pub fn split<A>(tensor: &ArrayBase<OwnedRepr<A>, IxDyn>, indices: Vec<usize>, axis: usize) -> Vec<ArrayBase<OwnedRepr<A>, IxDyn>>
+where
+    A: Clone,
+{
+    let mut sub_tensors = Vec::new();
+    let mut start = 0;
+    for &index in &indices {
+        let end = index;
+        let mut view = tensor.view();
+        view.slice_axis_inplace(Axis(axis), (start..end).into());
+        sub_tensors.push(view.to_owned());
+        start = end;
+    }
+
+    // Aggiungi l'ultimo segmento
+    let mut last_view = tensor.view();
+    last_view.slice_axis_inplace(Axis(axis), (start..).into());
+    sub_tensors.push(last_view.to_owned());
+
+    sub_tensors
+}
+
+pub fn tile<A>(tensor: &ArrayBase<OwnedRepr<A>, IxDyn>, reps: Vec<usize>) -> ArrayBase<OwnedRepr<A>, IxDyn>
+where
+    A: Clone,
+{
+    let mut tiled_tensor = tensor.clone();
+    for (axis, &rep) in reps.iter().enumerate() {
+        tiled_tensor = tiled_tensor.clone().into_shape(tiled_tensor.raw_dim().insert_axis(Axis(axis)) * rep).unwrap();
+    }
+    tiled_tensor
+}
+
+pub fn gather<A>(tensor: &ArrayBase<OwnedRepr<A>, IxDyn>, indices: Vec<usize>, axis: usize) -> ArrayBase<OwnedRepr<A>, IxDyn>
+where
+    A: Clone,
+{
+    // Costruisci una lista di viste basate sugli indici
+    let slices: Vec<_> = indices.iter()
+                                .map(|&i| tensor.index_axis(Axis(axis), i))
+                                .collect();
+    
+    // Usa la funzione `stack` per impilare le viste lungo l'asse specificato
+    ndarray::stack(Axis(axis), &slices).unwrap()
+}
+
 pub fn execute_onnx(
     node: &NodeProto,
     input_tensors: &HashMap<String, Array<f32, IxDyn>>,
@@ -430,59 +581,3 @@ pub fn inference(
     // Restituisci i risultati
     output_tensors
 }
-
-// Funzione principale per eseguire le operazioni specifiche sul modello ONNX
-pub fn perform_operations(model: ModelProto) {
-    // Carica il modello ONNX utilizzando la funzione dal modulo onnx_handler
-    
-
-            if let Some(graph) = model.graph.as_ref() {
-                for node in &graph.node {
-                    println!("Node: {:?}", node);
-                }
-            }
-
-            // Esempio di tensori
-            let tensor_a = Array2::from_shape_fn((2, 2), |(i, j)| (i + j) as f32);
-            let tensor_b = Array2::from_shape_fn((2, 2), |(i, j)| (i * j) as f32);
-            //let result_add = add_tensors(tensor_a, tensor_b);
-            let result_sub = sub_tensors(tensor_a.clone(), tensor_b.clone());
-            let result_div = div_tensors(tensor_a.clone(), tensor_b.clone());
-            let result_max = max_tensors(&tensor_a, &tensor_b);
-            let result_min = min_tensors(&tensor_a, &tensor_b);
-
-            // Raccogli i tensori in una lista
-            let tensors_to_print = vec![
-                tensor_a,
-                tensor_b,
-                //result_add,
-                result_sub,
-                result_div,
-                result_max,
-                result_min,
-            ];
-
-            // Stampa tutti i tensori
-            print_tensors(tensors_to_print);
-        
-    }
-
-// fn convert_tensor_proto_to_array(tensor_proto: &TensorProto) -> Array<f32, IxDyn> {
-//     // Estrai i campi necessari da TensorProto
-//     let dims: Vec<usize> = tensor_proto.dims.iter().map(|&d| d as usize).collect();
-    
-//     // Converte i dati in un Array<f32, IxDyn>
-//     let array = match tensor_proto.data_type {
-//         DataType::FLOAT => {
-//             let tensor_data = tensor_proto.float_data.as_ref().unwrap_or(&vec![]);
-//             Array::from_shape_vec(dims.into(), tensor_data.clone()).unwrap()
-//         }
-//         // Aggiungi altri casi per gli altri tipi di dato supportati
-//         _ => {
-//             eprintln!("Unsupported data type: {:?}", tensor_proto.data_type);
-//             Array::from_shape_vec(IxDyn(&[]), vec![]).unwrap()
-//         }
-//     };
-
-//     array
-// }

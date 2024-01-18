@@ -15,7 +15,6 @@ onnx = "0.1.0"
 rand = "0.8.5"
 ndarray-rand = "0.14.0"
 ndarray-parallel = "0.9.1"
-ndarray-parallel = "0.9.1"
 
 [build-dependencies]
 prost-build = { version = "0.12.3" }
