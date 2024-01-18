@@ -667,6 +667,52 @@ where
     result
 }
 
+pub fn reduce_mean<A>(
+    data: &ArrayBase<OwnedRepr<A>, IxDyn>,
+    axes: Option<&[i64]>,
+    keepdims: bool,
+    noop_with_empty_axes: bool,
+) -> ArrayBase<OwnedRepr<A>, IxDyn>
+where
+    A: Float + FromPrimitive,
+{
+    // Convert axes to usize, handling negative values
+    let data_shape = data.shape();
+    let rank = data_shape.len();
+    let axes: Vec<usize> = match axes {
+        Some(ax) => ax.iter()
+            .map(|&a| if a < 0 { (rank as i64 + a) as usize } else { a as usize })
+            .collect(),
+        None => (0..rank).collect(),
+    };
+
+    // Se gli assi sono vuoti e noop_with_empty_axes è true, ritorna il tensore originale
+    if axes.is_empty() && noop_with_empty_axes {
+        return data.to_owned();
+    }
+
+    // Calcola la media lungo gli assi specificati
+    let mut reduced = data.to_owned();
+    for &axis in &axes {
+        reduced = reduced.mean_axis(Axis(axis))
+            .expect("Failed to compute mean along the axis");
+
+        if !keepdims {
+            reduced = reduced.index_axis_move(Axis(axis), 0);
+        }
+    }
+
+    // Gestisce il mantenimento delle dimensioni ridotte
+    if keepdims {
+        let mut shape = data_shape.to_vec();
+        for &axis in &axes {
+            shape[axis] = 1;
+        }
+        reduced = reduced.into_shape(shape).unwrap();
+    }
+
+    reduced
+}
 
 /* 
 pub fn batch_normalization(
@@ -704,47 +750,6 @@ pub fn batch_normalization(
 }
 
 
-
-pub fn slice<A, Din, Dout>(tensor: &ArrayBase<OwnedRepr<A>, Din>, slice_info: &SliceInfo<A, Din, Dout>) -> ArrayBase<OwnedRepr<A>, Dout>
-where
-    A: Clone,
-    Din: Dimension,
-    Dout: Dimension,
-{
-    tensor.slice(slice_info.as_ref()).to_owned()
-}
-
-
-
-pub fn group_normalization<A>(input: &ArrayBase<OwnedRepr<A>, IxDyn>, num_groups: usize, epsilon: f32) -> ArrayBase<OwnedRepr<A>, IxDyn>
-where
-    A: Float + std::iter::Sum,
-{
-    let (batch_size, channels, ..) = (input.shape()[0], input.shape()[1]);
-    let group_size = channels / num_groups;
-
-    let mut normalized = input.to_owned();
-    for b in 0..batch_size {
-        for g in 0..num_groups {
-            let start = g * group_size;
-            let end = start + group_size;
-            let slice = s![b, start..end, .., ..];
-
-            let mean = input.slice(slice).mean_axis(Axis(0)).unwrap();
-            let variance = input.slice(slice).var_axis(Axis(0), A::zero());
-            let slice_normalized = input.slice(slice).map_axis(Axis(0), |row| {
-                let mean_row = mean.index_axis(Axis(0), row.axis());
-                let var_row = variance.index_axis(Axis(0), row.axis());
-                (row - mean_row) / (var_row + A::from(epsilon).unwrap()).sqrt()
-            });
-
-            normalized.slice_mut(slice).assign(&slice_normalized);
-        }
-    }
-
-    normalized
-}
-
 pub fn batch_normalization<A>(input: &ArrayBase<OwnedRepr<A>, IxDyn>, epsilon: f32) -> ArrayBase<OwnedRepr<A>, IxDyn>
 where
     A: Float + std::iter::Sum,
@@ -760,22 +765,6 @@ where
     normalized
 }
 
-
-
-pub fn layer_normalization<A>(input: &ArrayBase<OwnedRepr<A>, IxDyn>, epsilon: f32) -> ArrayBase<OwnedRepr<A>, IxDyn>
-where
-    A: Float + std::iter::Sum,
-{
-    let mean = input.mean_axis(Axis(1)).unwrap();
-    let variance = input.var_axis(Axis(1), A::zero());
-    let normalized = input.map_axis(Axis(1), |row| {
-        let mean_row = mean.index_axis(Axis(0), row.axis());
-        let var_row = variance.index_axis(Axis(0), row.axis());
-        (row - mean_row) / (var_row + A::from(epsilon).unwrap()).sqrt()
-    });
-
-    normalized
-}
 
 */
 
