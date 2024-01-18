@@ -8,8 +8,8 @@ use onnx_interpreter::utils::*;
 
 fn main() {
     //Read the model
-    //let path = "models/mobilenetv2-12.onnx";
-    let path = "models/shufflenet-v2-12.onnx";
+    let path = "models/mobilenetv2-12.onnx";
+    // let path = "models/shufflenet-v2-12.onnx";
 
     let model = file::read::<ModelProto>(path).unwrap();
     let graph = model.graph.unwrap();
@@ -20,8 +20,17 @@ fn main() {
     //     println!("Input: {:?}", name);
     // }
 
-    let ops = graph.node.iter().map(|node| node.op_type.clone()).collect::<HashSet<String>>();
-    println!("Operations: {:?}", ops);
+    let mut conv = true; 
+    let mut concat = true;
+    for node in graph.node.iter() {
+        if node.op_type == "Conv" && conv {
+            println!("Conv: {:?}", node);
+            conv = false;
+        } else if node.op_type == "Concat" && concat {
+            println!("Concat: {:?}", node);
+            concat = false;
+        }
+    }
 
     //Print outputs
     //outputs.iter().for_each(|(name, tensor)| println!("Output: {:?} \n{:?}", name, tensor));

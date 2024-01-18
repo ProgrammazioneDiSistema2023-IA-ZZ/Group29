@@ -372,13 +372,13 @@ where
 pub fn convolution<T>(
     input: &Array<T, IxDyn>, // Input tensor X
     weights: &Array<T, IxDyn>, // Weight tensor W
-    bias: Option<&Array<T, Ix1>>, // Optional Bias tensor B
+    bias: Option<&Array<T, IxDyn>>, // Optional Bias tensor B
     auto_pad: &str, // auto_pad attribute
-    dilations: Vec<i64>, // dilations attribute
+    dilations: &Vec<i64>, // dilations attribute
     group: i64, // group attribute
-    kernel_shape: Vec<i64>, // kernel_shape attribute
-    pads: Vec<i64>, // pads attribute
-    strides: Vec<i64>, // strides attribute
+    kernel_shape: &Vec<i64>, // kernel_shape attribute
+    pads: &Vec<i64>, // pads attribute
+    strides: &Vec<i64>, // strides attribute
 ) -> Array<T, IxDyn>
 where
     T: std::ops::Add<Output = T> + std::ops::Mul<Output = T> + Copy + Default + Clone + Zero,
@@ -405,7 +405,6 @@ where
     } else {
         pads.to_vec()
     };
-    
 
     // Applica il padding al tensore di input
     let padded_input = apply_padding(input, &actual_pads);

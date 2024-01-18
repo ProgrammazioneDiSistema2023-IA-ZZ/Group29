@@ -11,3 +11,5 @@ pub mod interpreter;
 pub mod utils;
 
 pub mod array;
+
+pub mod attribute;
