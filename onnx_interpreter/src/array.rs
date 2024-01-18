@@ -244,6 +244,26 @@ impl ArrayMultiType {
         }
     }
 
+    pub fn equal(array_a: &ArrayMultiType, array_b: &ArrayMultiType) -> ArrayMultiType {
+        match (array_a, array_b) {
+            (ArrayMultiType::FLOAT(a), ArrayMultiType::FLOAT(b)) => ArrayMultiType::BOOL(equal(a, b)),
+            (ArrayMultiType::UINT8(a), ArrayMultiType::UINT8(b)) => ArrayMultiType::BOOL(equal(a, b)),
+            (ArrayMultiType::INT8(a), ArrayMultiType::INT8(b)) => ArrayMultiType::BOOL(equal(a, b)),
+            (ArrayMultiType::UINT16(a), ArrayMultiType::UINT16(b)) => ArrayMultiType::BOOL(equal(a, b)),
+            (ArrayMultiType::INT16(a), ArrayMultiType::INT16(b)) => ArrayMultiType::BOOL(equal(a, b)),
+            (ArrayMultiType::INT32(a), ArrayMultiType::INT32(b)) => ArrayMultiType::BOOL(equal(a, b)),
+            (ArrayMultiType::INT64(a), ArrayMultiType::INT64(b)) => ArrayMultiType::BOOL(equal(a, b)),
+            _ => panic!("Equal op does not support this data type")
+        }
+    }
+
+    pub fn not(array: &ArrayMultiType) -> ArrayMultiType {
+        match array {
+            ArrayMultiType::BOOL(a) => ArrayMultiType::BOOL(not(a)),
+            _ => panic!("Not op does not support this data type")
+        }
+    }
+
     pub fn matmul(array_a: &ArrayMultiType, array_b: &ArrayMultiType) -> ArrayMultiType {
         match (array_a, array_b) {
             (ArrayMultiType::FLOAT(a), ArrayMultiType::FLOAT(b)) => ArrayMultiType::FLOAT(matmul(a, b).unwrap()),
@@ -251,7 +271,81 @@ impl ArrayMultiType {
         }
     }
 
+    pub fn global_average_pool(array: &ArrayMultiType) -> ArrayMultiType {
+        match array {
+            ArrayMultiType::FLOAT(a) => ArrayMultiType::FLOAT(global_average_pool(a)),
+            _ => panic!("Global average pool op does not support this data type")
+        }
+    }
 
+    pub fn concat(arrays: Vec<&ArrayMultiType>, axis: isize) -> ArrayMultiType {
+        match arrays {
+            arrays if arrays.iter().all(|array| matches!(array, ArrayMultiType::FLOAT(_))) => {
+                let arrays = arrays.iter().map(|array| {
+                    match array {
+                        ArrayMultiType::FLOAT(a) => a,
+                        _ => panic!("Concat op does not support this data type")
+                    }
+                }).collect::<Vec<&Array<f32, IxDyn>>>();
+                ArrayMultiType::FLOAT(concat(arrays, axis))
+            },
+            arrays if arrays.iter().all(|array| matches!(array, ArrayMultiType::UINT8(_))) => {
+                let arrays = arrays.iter().map(|array| {
+                    match array {
+                        ArrayMultiType::UINT8(a) => a,
+                        _ => panic!("Concat op does not support this data type")
+                    }
+                }).collect::<Vec<&Array<u8, IxDyn>>>();
+                ArrayMultiType::UINT8(concat(arrays, axis))
+            },
+            arrays if arrays.iter().all(|array| matches!(array, ArrayMultiType::INT8(_))) => {
+                let arrays = arrays.iter().map(|array| {
+                    match array {
+                        ArrayMultiType::INT8(a) => a,
+                        _ => panic!("Concat op does not support this data type")
+                    }
+                }).collect::<Vec<&Array<i8, IxDyn>>>();
+                ArrayMultiType::INT8(concat(arrays, axis))
+            },
+            arrays if arrays.iter().all(|array| matches!(array, ArrayMultiType::UINT16(_))) => {
+                let arrays = arrays.iter().map(|array| {
+                    match array {
+                        ArrayMultiType::UINT16(a) => a,
+                        _ => panic!("Concat op does not support this data type")
+                    }
+                }).collect::<Vec<&Array<u16, IxDyn>>>();
+                ArrayMultiType::UINT16(concat(arrays, axis))
+            },
+            arrays if arrays.iter().all(|array| matches!(array, ArrayMultiType::INT16(_))) => {
+                let arrays = arrays.iter().map(|array| {
+                    match array {
+                        ArrayMultiType::INT16(a) => a,
+                        _ => panic!("Concat op does not support this data type")
+                    }
+                }).collect::<Vec<&Array<i16, IxDyn>>>();
+                ArrayMultiType::INT16(concat(arrays, axis))
+            },
+            arrays if arrays.iter().all(|array| matches!(array, ArrayMultiType::INT32(_))) => {
+                let arrays = arrays.iter().map(|array| {
+                    match array {
+                        ArrayMultiType::INT32(a) => a,
+                        _ => panic!("Concat op does not support this data type")
+                    }
+                }).collect::<Vec<&Array<i32, IxDyn>>>();
+                ArrayMultiType::INT32(concat(arrays, axis))
+            },
+            arrays if arrays.iter().all(|array| matches!(array, ArrayMultiType::INT64(_))) => {
+                let arrays = arrays.iter().map(|array| {
+                    match array {
+                        ArrayMultiType::INT64(a) => a,
+                        _ => panic!("Concat op does not support this data type")
+                    }
+                }).collect::<Vec<&Array<i64, IxDyn>>>();
+                ArrayMultiType::INT64(concat(arrays, axis))
+            },
+            _ => panic!("Concat op does not support this data type")
+        }
+    }
 }
 
 
