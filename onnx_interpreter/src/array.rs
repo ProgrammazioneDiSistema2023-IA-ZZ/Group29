@@ -145,6 +145,19 @@ impl ArrayMultiType {
         }
     }
 
+    pub fn to_vec_usize(&self) -> Vec<usize> {
+        match self {
+            ArrayMultiType::FLOAT(a) => a.shape().to_vec().iter().map(|&x| x as usize).collect::<Vec<usize>>(),
+            ArrayMultiType::UINT8(a) => a.shape().to_vec().iter().map(|&x| x as usize).collect::<Vec<usize>>(),
+            ArrayMultiType::INT8(a) => a.shape().to_vec().iter().map(|&x| x as usize).collect::<Vec<usize>>(),
+            ArrayMultiType::UINT16(a) => a.shape().to_vec().iter().map(|&x| x as usize).collect::<Vec<usize>>(),
+            ArrayMultiType::INT16(a) => a.shape().to_vec().iter().map(|&x| x as usize).collect::<Vec<usize>>(),
+            ArrayMultiType::INT32(a) => a.shape().to_vec().iter().map(|&x| x as usize).collect::<Vec<usize>>(),
+            ArrayMultiType::INT64(a) => a.shape().to_vec().iter().map(|&x| x as usize).collect::<Vec<usize>>(),
+            ArrayMultiType::BOOL(a) => a.shape().to_vec().iter().map(|&x| x as usize).collect::<Vec<usize>>()
+        }
+    }
+
     pub fn multiply(array_a: &ArrayMultiType, array_b: &ArrayMultiType) -> ArrayMultiType {
         match (array_a, array_b) {
             (ArrayMultiType::FLOAT(a), ArrayMultiType::FLOAT(b)) => ArrayMultiType::FLOAT(multiply(a, b)),
@@ -416,5 +429,45 @@ impl ArrayMultiType {
             },
             _ => panic!("Convolution op does not support this data type")
         }
+    }
+
+    pub fn transpose(array: &ArrayMultiType, axes: Option<Vec<usize>>) -> ArrayMultiType {
+        match array {
+            ArrayMultiType::FLOAT(a) => ArrayMultiType::FLOAT(transpose(a, axes)),
+            ArrayMultiType::UINT8(a) => ArrayMultiType::UINT8(transpose(a, axes)),
+            ArrayMultiType::INT8(a) => ArrayMultiType::INT8(transpose(a, axes)),
+            ArrayMultiType::UINT16(a) => ArrayMultiType::UINT16(transpose(a, axes)),
+            ArrayMultiType::INT16(a) => ArrayMultiType::INT16(transpose(a, axes)),
+            ArrayMultiType::INT32(a) => ArrayMultiType::INT32(transpose(a, axes)),
+            ArrayMultiType::INT64(a) => ArrayMultiType::INT64(transpose(a, axes)),
+            _ => panic!("Transpose op does not support this data type")
+        }
+    }
+
+    pub fn tile(array: &ArrayMultiType, repeats: &Vec<usize>) -> ArrayMultiType {
+        match array {
+            ArrayMultiType::FLOAT(a) => ArrayMultiType::FLOAT(tile(a, repeats)),
+            ArrayMultiType::UINT8(a) => ArrayMultiType::UINT8(tile(a, repeats)),
+            ArrayMultiType::INT8(a) => ArrayMultiType::INT8(tile(a, repeats)),
+            ArrayMultiType::UINT16(a) => ArrayMultiType::UINT16(tile(a, repeats)),
+            ArrayMultiType::INT16(a) => ArrayMultiType::INT16(tile(a, repeats)),
+            ArrayMultiType::INT32(a) => ArrayMultiType::INT32(tile(a, repeats)),
+            ArrayMultiType::INT64(a) => ArrayMultiType::INT64(tile(a, repeats)),
+            _ => panic!("Tile op does not support this data type")
+        }
+    }
+
+    pub fn gather(array: &ArrayMultiType, indices: &Vec<usize>, axis: usize) -> ArrayMultiType {
+        match array {
+            ArrayMultiType::FLOAT(a) => ArrayMultiType::FLOAT(gather(a, indices, axis)),
+            ArrayMultiType::UINT8(a) => ArrayMultiType::UINT8(gather(a, indices, axis)),
+            ArrayMultiType::INT8(a) => ArrayMultiType::INT8(gather(a, indices, axis)),
+            ArrayMultiType::UINT16(a) => ArrayMultiType::UINT16(gather(a, indices, axis)),
+            ArrayMultiType::INT16(a) => ArrayMultiType::INT16(gather(a, indices, axis)),
+            ArrayMultiType::INT32(a) => ArrayMultiType::INT32(gather(a, indices, axis)),
+            ArrayMultiType::INT64(a) => ArrayMultiType::INT64(gather(a, indices, axis)),
+            _ => panic!("Gather op does not support this data type")
+        }
+            
     }
 }

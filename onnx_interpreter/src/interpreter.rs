@@ -60,7 +60,28 @@ pub fn execute_node(node: &NodeProto, inputs:  &HashMap<String, ArrayMultiType>)
             outputs.insert(node.output[0].clone(), output)
         },
         "Relu" => outputs.insert(node.output[0].clone(), ArrayMultiType::relu(input_tensors[0])),
-
+        "Transpose" => {
+            let perm = match attributes.get("perm") {
+                Some(Attribute::Ints(perm)) => Some(perm.iter().map(|x| *x as usize).collect::<Vec<usize>>()),
+                _ => None
+            };
+            outputs.insert(node.output[0].clone(), ArrayMultiType::transpose(input_tensors[0], perm))
+        },
+        "Tile" => {
+            let repeats = match attributes.get("repeats") {
+                Some(Attribute::Ints(repeats)) => repeats.iter().map(|x| *x as usize).collect::<Vec<usize>>(),
+                _ => return Err("Invalid repeats")
+            };
+            outputs.insert(node.output[0].clone(), ArrayMultiType::tile(input_tensors[0], &repeats))
+        },
+        "Gather" => {
+            let axis = match attributes.get("axis") {
+                Some(Attribute::Int(axis)) => *axis as usize,
+                _ => return Err("Invalid axis")
+            };
+            let indices = &input_tensors[1].to_vec_usize();
+            outputs.insert(node.output[0].clone(), ArrayMultiType::gather(input_tensors[0], indices, axis))
+        },
         _ => return Err("Operation not supported")        
     };
     // Print node information
