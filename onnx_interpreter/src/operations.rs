@@ -1158,24 +1158,31 @@ where
 }
 
 // Funzione Flatten
-pub fn flatten<S>(input: &ArrayBase<S, IxDyn>, axis: isize) -> ArrayBase<S, IxDyn>
+pub fn flatten<S>(input: &ArrayBase<S, IxDyn>, axis: isize) -> ArrayBase<OwnedRepr<S::Elem>, IxDyn>
 where
     S: Data,
+    S::Elem: Clone,
 {
     let shape = input.shape();
     let rank = shape.len() as isize;
 
-    // Calcolare l'indice effettivo positivo di 'axis'
+    // Gestione axis negativo
     let axis = if axis < 0 { rank + axis } else { axis };
 
-    // Calcolare le nuove dimensioni
-    let (dim0, dim1) = shape.split_at(axis as usize);
-    let new_dim0 = dim0.iter().product();
-    let new_dim1 = dim1.iter().product();
+    // Verifica che axis sia nel range valido
+    if axis < 0 || axis > rank {
+        panic!("Axis out of range");
+    }
 
-    // Reshape del tensore e conversione a dimensioni dinamiche
-    input.clone().into_shape((new_dim0, new_dim1)).unwrap().into_dyn()
+    // Calcola le nuove dimensioni
+    let (dims_before_axis, dims_after_axis) = shape.split_at(axis as usize);
+    let new_dim0 = dims_before_axis.iter().product::<usize>();
+    let new_dim1 = dims_after_axis.iter().product::<usize>();
+
+    // Reshape e conversione in array dinamico
+    input.to_owned().into_shape((new_dim0, new_dim1)).unwrap().into_dyn()
 }
+
 
 pub fn execute_onnx(
     node: &NodeProto,
