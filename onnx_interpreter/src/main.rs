@@ -20,16 +20,8 @@ fn main() {
     //     println!("Input: {:?}", name);
     // }
 
-    let mut conv = true; 
-    let mut concat = true;
     for node in graph.node.iter() {
-        if node.op_type == "Conv" && conv {
-            println!("Conv: {:?}", node);
-            conv = false;
-        } else if node.op_type == "Concat" && concat {
-            println!("Concat: {:?}", node);
-            concat = false;
-        }
+        println!("Node: {:?}", node.op_type);
     }
 
     //Print outputs
