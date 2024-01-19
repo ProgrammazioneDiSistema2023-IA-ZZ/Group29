@@ -14,17 +14,11 @@ fn main() {
     let model = file::read::<ModelProto>(path).unwrap();
     let graph = model.graph.unwrap();
 
-    let inputs = get_inputs(&graph).unwrap();
+    let mut inputs = get_inputs(&graph).unwrap();
 
-    // for (name, tensor) in &inputs {
-    //     println!("Input: {:?}", name);
-    // }
+    let outputs = execute_graph(&graph, &mut inputs).unwrap();
 
-    for node in graph.node.iter() {
-        println!("Node: {:?}", node.op_type);
-    }
-
-    //Print outputs
-    //outputs.iter().for_each(|(name, tensor)| println!("Output: {:?} \n{:?}", name, tensor));
+    // Print outputs
+    outputs.iter().for_each(|(name, tensor)| println!("Output: {:?} \n{:?}", name, tensor));
 
 }

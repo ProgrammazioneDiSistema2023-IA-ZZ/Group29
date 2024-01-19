@@ -1,5 +1,6 @@
 use crate::onnx::{AttributeProto, attribute_proto::AttributeType};
 
+#[derive(Debug, Clone)]
 pub enum Attribute {
     Float(f32),
     Int(i64),

@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::thread;
+use std::sync::{Arc, Mutex};
 
 use crate::onnx::attribute_proto::AttributeType;
 use crate::onnx::type_proto::Value as ProtoValue;
@@ -41,33 +43,57 @@ fn random_array(info: &ValueInfoProto) -> Result<(String, ArrayMultiType), &'sta
 }
 
 pub fn get_inputs(graph: &GraphProto) -> Result<HashMap<String, ArrayMultiType>, &'static str> {
-    let mut inputs = HashMap::new();
-    
-    for initializer in graph.initializer.iter() {
-        let (name, array) = init_array(&initializer)?;
-        inputs.insert(name, array);
-    }
+    let shared_inputs = Arc::new(Mutex::new(HashMap::new()));
+    let mut threads = Vec::new();
 
     for input in graph.input.iter() {
-        if !inputs.contains_key(&input.name) {
-            let (name, array) = random_array(&input)?;
+        let input_clone = input.clone(); // Clone the input variable
+        let shared_inputs_clone = Arc::clone(&shared_inputs); // Clone the shared_inputs variable
+        threads.push(thread::spawn(move || {
+            let (name, array) = random_array(&input_clone).unwrap();
+            let mut inputs = shared_inputs_clone.lock().unwrap();
             inputs.insert(name, array);
-        }
+        }));
     }
 
-    Ok(inputs)
+    for initializer in graph.initializer.iter() {
+        let initializer_clone = initializer.clone(); // Clone the initializer variable
+        let shared_inputs_clone = Arc::clone(&shared_inputs); // Clone the shared_inputs variable
+        threads.push(thread::spawn(move || {
+            let (name, array) = init_array(&initializer_clone).unwrap();
+            let mut inputs = shared_inputs_clone.lock().unwrap();
+            inputs.insert(name, array);
+        }));
+    }
+
+    for thread in threads {
+        thread.join().unwrap();
+    }
+
+    let inputs = shared_inputs.lock().unwrap();
+    Ok(inputs.clone())
 }
 
 pub fn get_attributes(node: &NodeProto) -> Result<HashMap<String, Attribute>, &'static str> {
-    let mut attributes = HashMap::new();
+    let shared_attributes = Arc::new(Mutex::new(HashMap::new()));
+    let mut threads = Vec::new();
 
     for attribute in node.attribute.iter() {
-        let name = attribute.name.clone();
-        let attribute = Attribute::from_proto(&attribute)?;
-        attributes.insert(name, attribute);
+        let attribute_clone = attribute.clone(); // Clone the attribute variable
+        let shared_attributes_clone = Arc::clone(&shared_attributes); // Clone the shared_attributes variable
+        threads.push(thread::spawn(move || {
+            let attribute = Attribute::from_proto(&attribute_clone).unwrap();
+            let mut attributes = shared_attributes_clone.lock().unwrap();
+            attributes.insert(attribute_clone.name.clone(), attribute);
+        }));
     }
 
-    Ok(attributes)
+    for thread in threads {
+        thread.join().unwrap();
+    }
+
+    let attributes = shared_attributes.lock().unwrap();
+    Ok(attributes.clone())
 }
 
 
