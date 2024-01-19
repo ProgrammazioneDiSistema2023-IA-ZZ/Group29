@@ -577,6 +577,36 @@ pub fn layer_normalization(
     output
 }
 
+
+pub fn batch_normalization(
+    x: &ArrayBase<OwnedRepr<f32>, IxDyn>, 
+    scale: &ArrayBase<OwnedRepr<f32>, IxDyn>,
+    b: &ArrayBase<OwnedRepr<f32>, IxDyn>,
+    input_mean: &ArrayBase<OwnedRepr<f32>, IxDyn>,
+    input_var: &ArrayBase<OwnedRepr<f32>, IxDyn>,
+    epsilon: f32,
+    momentum: f32,
+    training_mode: bool
+) -> (ArrayBase<OwnedRepr<f32>, IxDyn>, Option<ArrayBase<OwnedRepr<f32>, IxDyn>>, Option<ArrayBase<OwnedRepr<f32>, IxDyn>>)
+{
+    let sqrt_var = (&*input_var + epsilon).mapv(|var| var.sqrt());
+    let norm = (x - input_mean) / &sqrt_var;
+    let y = norm * scale + b;
+
+    if training_mode {
+        let current_mean = x.mean_axis(Axis(0)).unwrap();
+        let current_var = x.var_axis(Axis(0), 0.0);
+
+        let updated_mean = input_mean * momentum + &current_mean * (1.0 - momentum);
+        let updated_var = input_var * momentum + &current_var * (1.0 - momentum);
+
+        (y, Some(updated_mean), Some(updated_var))
+    } else {
+        (y, None, None)
+    }
+}
+
+
 // Funzione Slice
 pub fn slice_tensor(
     tensor: &ArrayD<f32>,
