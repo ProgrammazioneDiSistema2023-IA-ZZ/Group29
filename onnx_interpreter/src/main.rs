@@ -16,7 +16,7 @@ fn main() {
 
     let mut inputs = get_inputs(&graph).unwrap();
 
-    let outputs = execute_graph(&graph, &mut inputs).unwrap();
+    let outputs = execute_graph(&graph).unwrap();
 
     // Print outputs
     outputs.iter().for_each(|(name, tensor)| println!("Output: {:?} \n{:?}", name, tensor));
