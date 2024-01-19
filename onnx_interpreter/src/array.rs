@@ -8,7 +8,7 @@ use rand::distributions::{Uniform, uniform::SampleUniform};
 use crate::onnx::{TensorShapeProto, tensor_shape_proto::dimension::Value};
 use crate::operations::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ArrayMultiType {
     FLOAT(Array<f32, IxDyn>),
     UINT8(Array<u8, IxDyn>),
