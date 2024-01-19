@@ -97,11 +97,13 @@ fn from_vec<A: Clone>(vec: &Vec<A>, dims: &Vec<i64>) -> Result<Array<A, IxDyn>, 
 
 fn random<A: SampleUniform>(tensor_shape: &TensorShapeProto, range_low: A, range_high: A) -> Array<A, IxDyn> {
     let shape = tensor_shape.dim.iter().map(|d| {
-        match d.value.clone().unwrap() {
-            Value::DimValue(v) => v as usize,
-            Value::DimParam(_) => 1 as usize
+        match &d.value {
+            Some(Value::DimValue(v)) => *v as usize,
+            Some(Value::DimParam(_)) => 1 as usize,
+            None => 0,
         }
     }).collect::<Vec<usize>>();
+    
     Array::<A, IxDyn>::random(shape, Uniform::new(range_low, range_high))
 }
 
