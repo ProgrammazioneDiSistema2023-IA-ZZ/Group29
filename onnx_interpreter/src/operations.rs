@@ -744,60 +744,20 @@ where
     reduced
 }
 
-/* 
-pub fn batch_normalization(
-    input: &ArrayBase<impl Data<Elem = f32>, IxDyn>,
-    scale: &ArrayBase<impl Data<Elem = f32>, IxDyn>,
-    bias: &ArrayBase<impl Data<Elem = f32>, IxDyn>,
-    input_mean: &ArrayBase<impl Data<Elem = f32>, IxDyn>,
-    input_var: &ArrayBase<impl Data<Elem = f32>, IxDyn>,
-    epsilon: f32,
-    training_mode: bool,
-) -> Array<f32, IxDyn> {
-    let mean = if training_mode {
-        input.mean_axis(Axis(1)).unwrap().insert_axis(Axis(1))
-    } else {
-        input_mean.view().insert_axis(Axis(1))
-    };
-
-    let var = if training_mode {
-        input.var_axis(Axis(1), 0.0).insert_axis(Axis(1))
-    } else {
-        input_var.view().insert_axis(Axis(1))
-    };
-
-    // Calcolare la normalizzazione su ciascun batch
-    let normalized = Zip::from(input.view())
-        .and_broadcast(&mean)
-        .and_broadcast(&var)
-        .map_collect(|&x, &mean, &var| (x - mean) / ((var + epsilon).sqrt()));
-
-    // Applicare scale e bias
-    let scaled = &normalized * &scale.view();
-    let shifted = &scaled + &bias.view();
-
-    shifted.to_owned()
+// Funzione HardSwish
+fn hardswish_element(x: f32) -> f32 {
+    let alpha = 1.0 / 6.0;
+    let beta = 0.5;
+    x * f32::max(0.0, f32::min(1.0, alpha * x + beta))
 }
 
-
-pub fn batch_normalization<A>(input: &ArrayBase<OwnedRepr<A>, IxDyn>, epsilon: f32) -> ArrayBase<OwnedRepr<A>, IxDyn>
+// Applicazione di HardSwish a un tensore
+pub fn hardswish<S>(x: &ArrayBase<S, IxDyn>) -> ArrayD<f32>
 where
-    A: Float + std::iter::Sum,
+    S: Data<Elem = f32>,
 {
-    let mean = input.mean_axis(Axis(0)).unwrap();
-    let variance = input.var_axis(Axis(0), A::zero());
-    let normalized = input.map_axis(Axis(0), |batch| {
-        let mean_batch = mean.index_axis(Axis(0), batch.axis());
-        let var_batch = variance.index_axis(Axis(0), batch.axis());
-        (batch - mean_batch) / (var_batch + A::from(epsilon).unwrap()).sqrt()
-    });
-
-    normalized
+    x.mapv(|elem| hardswish_element(elem))
 }
-
-
-*/
-
 
 pub fn global_average_pool<T>(input: &Array<T, IxDyn>) -> Array<T, IxDyn>
 where
@@ -1171,4 +1131,112 @@ where
     
     // Usa la funzione `stack` per impilare le viste lungo l'asse specificato
     ndarray::stack(Axis(axis), &slices).unwrap()
+}
+
+pub fn gemm<S>(
+    a: &ArrayBase<S, Ix2>,
+    b: &ArrayBase<S, Ix2>,
+    c: Option<&ArrayBase<S, Ix2>>,
+    alpha: f32,
+    beta: f32,
+    trans_a: bool,
+    trans_b: bool
+) -> Array2<f32>
+where
+    S: Data<Elem = f32>,
+{
+    let a = if trans_a { a.t() } else { a.view() };
+    let b = if trans_b { b.t() } else { b.view() };
+
+    let mut result = a.dot(&b) * alpha;
+
+    if let Some(c) = c {
+        result = result + c * beta;
+    }
+
+    result
+}
+
+// Funzione Flatten
+pub fn flatten<S>(input: &ArrayBase<S, IxDyn>, axis: isize) -> ArrayBase<S, IxDyn>
+where
+    S: Data,
+{
+    let shape = input.shape();
+    let rank = shape.len() as isize;
+
+    // Calcolare l'indice effettivo positivo di 'axis'
+    let axis = if axis < 0 { rank + axis } else { axis };
+
+    // Calcolare le nuove dimensioni
+    let (dim0, dim1) = shape.split_at(axis as usize);
+    let new_dim0 = dim0.iter().product();
+    let new_dim1 = dim1.iter().product();
+
+    // Reshape del tensore e conversione a dimensioni dinamiche
+    input.clone().into_shape((new_dim0, new_dim1)).unwrap().into_dyn()
+}
+
+pub fn execute_onnx(
+    node: &NodeProto,
+    input_tensors: &HashMap<String, Array<f32, IxDyn>>,
+    output_tensors: &mut HashMap<String, Array<f32, IxDyn>>,
+) {
+    // Estrai informazioni dal nodo ONNX
+    let op_type = &node.op_type;
+    let input_names = &node.input;
+    let output_names = &node.output;
+
+    // Gestisci diverse operazioni in base al tipo di operatore (op_type)
+    match op_type.as_str() {
+        // Aggiungi casi per ciascun tipo di operatore supportato
+        "Add" => {
+            // Esempio: Somma due tensori
+            let input_a = input_tensors.get(&input_names[0]).unwrap();
+            let input_b = input_tensors.get(&input_names[1]).unwrap();
+            let output = input_a + input_b;
+            output_tensors.insert(output_names[0].clone(), output);
+        }
+        // Aggiungi altri casi per altri operatori supportati
+        // ...
+
+        // Gestisci i casi non supportati
+        _ => {
+            eprintln!("Unsupported operator type: {}", op_type);
+            // Puoi gestire l'operatore sconosciuto in modo specifico o ignorarlo
+        }
+    }
+}
+
+pub fn inference(
+    model: ModelProto,
+    input_tensors: HashMap<String, Array<f32, IxDyn>>,
+) -> HashMap<String, Array<f32, IxDyn>> {
+    let mut output_tensors: HashMap<String, Array<f32, IxDyn>> = HashMap::new();
+
+    // Accedi direttamente al campo `graph`
+    if let Some(graph) = model.graph {
+        // Estrai il grafo e gli input
+        let nodes = graph.node;
+        //let initializers = graph.initializer;
+
+        // Prepara i tensori di input
+        let mut all_tensors: HashMap<String, Array<f32, IxDyn>> = HashMap::new();
+        all_tensors.extend(input_tensors);
+
+        // Aggiungi gli initializer ai tensori di input
+        // for initializer in initializers {
+        //     let name = initializer.name;
+        //     let array = convert_tensor_proto_to_array(&initializer);
+        //     all_tensors.insert(name, array);
+        // }
+
+        // Itera sui nodi del grafo e esegui l'inferenza
+        for node in nodes {
+            execute_onnx(&node, &all_tensors, &mut output_tensors);
+        }
+    }
+
+    // Restituisci i risultati
+    output_tensors
 }
