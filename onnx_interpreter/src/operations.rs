@@ -1013,96 +1013,96 @@ pub fn max_from_slice<T: PartialOrd + Copy> (slice: &ArrayViewD<T>) -> T {
     max
 }
 
-// pub fn max_pool<T: Sync + Send + Float> (tensor: &Array<T, IxDyn>, auto_pad: Option<&str>,
-//                                          ceil_mode: Option<bool>, dilations: Option<Vec<isize>>,
-//                                          mut kernel_shape: Vec<isize>, pads: Option<Vec<isize>>,
-//                                          storage_order: Option<bool>, strides: Option<Vec<isize>>) -> Result<Array<T, IxDyn>, Error> {
-//     //todo: auto_pad, ceil_mode, storage_order
+pub fn max_pool<T: Sync + Send + Float> (tensor: &Array<T, IxDyn>, auto_pad: Option<&str>,
+                                         ceil_mode: Option<bool>, dilations: Option<Vec<isize>>,
+                                         mut kernel_shape: Vec<isize>, pads: Option<Vec<isize>>,
+                                         storage_order: Option<bool>, strides: Option<Vec<isize>>) -> Result<Array<T, IxDyn>, Error> {
+    //todo: auto_pad, ceil_mode, storage_order
 
-//     if kernel_shape.len() != tensor.ndim() { return Err(Error::KernelShapeError) }
-//     if kernel_shape.iter().any(|x| *x<=0) { return Err(Error::KernelShapeError) }
+    if kernel_shape.len() != tensor.ndim() { return Err(Error::KernelShapeError) }
+    if kernel_shape.iter().any(|x| *x<=0) { return Err(Error::KernelShapeError) }
 
-//     let auto_pad = match auto_pad {
-//         None => AutoPad::NotSet,
-//         Some(s) => match s {
-//             "NOTESET" => Autopad::NotSet,
-//             "SAME_UPPER" => AutoPad::SameUpper,
-//             "SAME_LOWER" => AUtoPad::SameLower,
-//             "VALID" => AutoPad::Valid,
-//             _ => return Err(Error::AutoPadError)
-//         }
-//     };
+    let auto_pad = match auto_pad {
+        None => AutoPad::NotSet,
+        Some(s) => match s {
+            "NOTESET" => AutoPad::NotSet,
+            "SAME_UPPER" => AutoPad::SameUpper,
+            "SAME_LOWER" => AutoPad::SameLower,
+            "VALID" => AutoPad::Valid,
+            _ => return Err(Error::AutoPadError)
+        }
+    };
 
-//     let ceil_mode = ceil_mode.unwrap_or(false);
+    let ceil_mode = ceil_mode.unwrap_or(false);
 
-//     let dilations = dilations.unwrap_or(vec![1; tensor.ndim()]);
-//     if dilations.len() != tensor.ndim() { return Err(Error::DilationError) }
-//     if dilations.iter().any(|x| *x<=0) { return Err(Error::DilationError) }
+    let dilations = dilations.unwrap_or(vec![1; tensor.ndim()]);
+    if dilations.len() != tensor.ndim() { return Err(Error::DilationError) }
+    if dilations.iter().any(|x| *x<=0) { return Err(Error::DilationError) }
 
-//     let pads = pads.unwrap_or(vec![0; 2*tensor.ndim()]);
-//     if pads.len() != 2*tensor.ndim() { return Err(Error::PadsError) }
-//     if pads.iter().any(|x| *x<0) { return Err(Error::PadsError) }
+    let pads = pads.unwrap_or(vec![0; 2*tensor.ndim()]);
+    if pads.len() != 2*tensor.ndim() { return Err(Error::PadsError) }
+    if pads.iter().any(|x| *x<0) { return Err(Error::PadsError) }
 
-//     let storage_order = storage_order.unwrap_or(false);
+    let storage_order = storage_order.unwrap_or(false);
 
-//     let strides = strides.unwrap_or(vec![1; tensor.ndim()]);
-//     if strides.len() != tensor.ndim() { return Err(Error::StridesError) }
-//     if strides.iter().any(|x| *x<=0) { return Err(Error::StridesError) }
+    let strides = strides.unwrap_or(vec![1; tensor.ndim()]);
+    if strides.len() != tensor.ndim() { return Err(Error::StridesError) }
+    if strides.iter().any(|x| *x<=0) { return Err(Error::StridesError) }
 
-//     //Padding
-//     let pads_begin = &pads[0..tensor.ndim()];
-//     let pads_end = &pads[tensor.ndim()..];
-//     let padded_tensor_shape = pads_begin.iter()
-//         .zip(tensor.shape()).zip(pads_end)
-//         .map(|((&a,&b),&c)| a as usize + b + c as usize)
-//         .collect::<Vec<_>>();
-//     let mut padded_tensor = ArrayD::<T>::zeros(IxDyn(&padded_tensor_shape));
-//     //Copy the input tensor in padded_tensor
-//     let paste_slice_info = pads_begin.iter().zip(tensor.shape())
-//         .map(|(&a, &b)| Slice{start: a, step: 1, end: Some(a + b as isize)})
-//         .collect::<Vec<_>>();
-//     let mut paste_slice =
-//         padded_tensor.slice_mut::<SliceInfo<Vec<SliceInfoElem>, IxDyn, IxDyn>>(SliceInfo::try_from(paste_slice_info).unwrap());
-//     paste_slice.iter_mut().zip(tensor).for_each(|(a, &b)| *a = b);
+    //Padding
+    let pads_begin = &pads[0..tensor.ndim()];
+    let pads_end = &pads[tensor.ndim()..];
+    let padded_tensor_shape = pads_begin.iter()
+        .zip(tensor.shape()).zip(pads_end)
+        .map(|((&a,&b),&c)| a as usize + b + c as usize)
+        .collect::<Vec<_>>();
+    let mut padded_tensor = ArrayD::<T>::zeros(IxDyn(&padded_tensor_shape));
+    //Copy the input tensor in padded_tensor
+    let paste_slice_info = pads_begin.iter().zip(tensor.shape())
+        .map(|(&a, &b)| SliceInfoElem::Slice{start: a, step: 1, end: Some(a + b as isize)})
+        .collect::<Vec<_>>();
+    let mut paste_slice =
+        padded_tensor.slice_mut::<SliceInfo<Vec<SliceInfoElem>, IxDyn, IxDyn>>(SliceInfo::try_from(paste_slice_info).unwrap());
+    paste_slice.iter_mut().zip(tensor).for_each(|(a, &b)| *a = b);
 
-//     //slice_shape[i] = tensor_shape[i] - dilation[i] * (kernel_shape[i] - 1)
-//     let slice_shape = padded_tensor.shape().iter()
-//         .zip(&kernel_shape).zip(&dilations)
-//         .map(|((&a, &b), &c)| a as isize - c*(b-1))
-//         .collect::<Vec<_>>();
-//     let slice_info = slice_shape.iter()
-//         .map(|&i| Slice{start: 0, step: 1, end: Some(i)})
-//         .collect::<Vec<_>>();
-//     let slice =
-//         padded_tensor.slice::<SliceInfo<Vec<SliceInfoElem>, IxDyn, IxDyn>>(SliceInfo::try_from(slice_info).unwrap());
+    //slice_shape[i] = tensor_shape[i] - dilation[i] * (kernel_shape[i] - 1)
+    let slice_shape = padded_tensor.shape().iter()
+        .zip(&kernel_shape).zip(&dilations)
+        .map(|((&a, &b), &c)| a as isize - c*(b-1))
+        .collect::<Vec<_>>();
+    let slice_info = slice_shape.iter()
+        .map(|&i| SliceInfoElem::Slice{start: 0, step: 1, end: Some(i)})
+        .collect::<Vec<_>>();
+    let slice =
+        padded_tensor.slice::<SliceInfo<Vec<SliceInfoElem>, IxDyn, IxDyn>>(SliceInfo::try_from(slice_info).unwrap());
 
 
-//     //Viene creato un tensore di slice, ogni slice contiene gli elementi che deve considerare l'operatore max
-//     //map index -> SliceInfo -> Slice
-//     let tensor_of_slices =
-//         slice.indexed_iter()
-//             .map( |(d, _)|
-//                 d.as_array_view().iter()
-//                     .zip(&kernel_shape).zip(&dilations)
-//                     .map(|((&i, &j), &d)|
-//                         Slice{start: i as isize, step: d, end: Some(i as isize + d*(j-1) + 1)})
-//                     .collect::<Vec<_>>()
-//             ).map(|info| padded_tensor.slice::<SliceInfo<Vec<SliceInfoElem>, IxDyn, IxDyn>>(SliceInfo::try_from(info).unwrap()))
-//             .collect::<Vec< ArrayViewD<T>>>();
+    //Viene creato un tensore di slice, ogni slice contiene gli elementi che deve considerare l'operatore max
+    //map index -> SliceInfo -> Slice
+    let tensor_of_slices =
+        slice.indexed_iter()
+            .map( |(d, _)|
+                d.as_array_view().iter()
+                    .zip(&kernel_shape).zip(&dilations)
+                    .map(|((&i, &j), &d)|
+                        SliceInfoElem::Slice{start: i as isize, step: d, end: Some(i as isize + d*(j-1) + 1)})
+                    .collect::<Vec<_>>()
+            ).map(|info| padded_tensor.slice::<SliceInfo<Vec<SliceInfoElem>, IxDyn, IxDyn>>(SliceInfo::try_from(info).unwrap()))
+            .collect::<Vec< ArrayViewD<T>>>();
 
-//     //Conversione da vec ad ArrayD
-//     let tensor_of_slices = ArrayD::from_shape_vec(slice.shape(), tensor_of_slices).unwrap();
+    //Conversione da vec ad ArrayD
+    let tensor_of_slices = ArrayD::from_shape_vec(slice.shape(), tensor_of_slices).unwrap();
 
-//     //Viene creata una slice del tensore tenendo conto degli stride
-//     let strides_slice_info = strides.iter()
-//         .map(|&i| Slice{start: 0, step: i as isize, end: None})
-//         .collect::<Vec<_>>();
-//     let strides_slice =
-//         tensor_of_slices.slice::<SliceInfo<Vec<SliceInfoElem>, IxDyn, IxDyn>>(SliceInfo::try_from(strides_slice_info).unwrap());
+    //Viene creata una slice del tensore tenendo conto degli stride
+    let strides_slice_info = strides.iter()
+        .map(|&i| SliceInfoElem::Slice{start: 0, step: i as isize, end: None})
+        .collect::<Vec<_>>();
+    let strides_slice =
+        tensor_of_slices.slice::<SliceInfo<Vec<SliceInfoElem>, IxDyn, IxDyn>>(SliceInfo::try_from(strides_slice_info).unwrap());
 
-//     //Ad ogni slice viene applicato l'operatore max
-//     Ok(Zip::from(&strides_slice).par_map_collect(|x| max_from_slice(x)))
-// }
+    //Ad ogni slice viene applicato l'operatore max
+    Ok(Zip::from(&strides_slice).par_map_collect(|x| max_from_slice(x)))
+}
 
 
 pub fn transpose<A>(tensor: &ArrayBase<OwnedRepr<A>, IxDyn>, axes: Option<Vec<usize>>) -> ArrayBase<OwnedRepr<A>, IxDyn>
