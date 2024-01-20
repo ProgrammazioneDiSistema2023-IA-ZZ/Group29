@@ -99,8 +99,7 @@ fn random<A: SampleUniform>(tensor_shape: &TensorShapeProto, range_low: A, range
     let shape = tensor_shape.dim.iter().map(|d| {
         match &d.value {
             Some(Value::DimValue(v)) => *v as usize,
-            Some(Value::DimParam(_)) => 1 as usize,
-            None => 0,
+            _ => 1 as usize,
         }
     }).collect::<Vec<usize>>();
     

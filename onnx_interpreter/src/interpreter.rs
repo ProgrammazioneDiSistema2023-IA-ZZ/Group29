@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::thread;
+use std::sync::{Arc, Mutex, Condvar};
 
 use crate::onnx::*;
 use crate::utils::*;
@@ -27,6 +29,7 @@ pub fn execute_node(node: &NodeProto, inputs:  &HashMap<String, ArrayMultiType>)
             outputs.insert(node.output[0].clone(), ArrayMultiType::concat(input_tensors, axis))
         },
         "Conv" => {
+            println!("Conv {:?}", attributes.keys());
             let kernel_shape = match attributes.get("kernel_shape") {
                 Some(Attribute::Ints(kernel_shape)) => kernel_shape,
                 _ => return Err("Invalid kernel shape")
@@ -92,20 +95,59 @@ pub fn execute_node(node: &NodeProto, inputs:  &HashMap<String, ArrayMultiType>)
     Ok(outputs)
 }
 
-pub fn execute_graph(graph: &GraphProto, inputs: &mut HashMap<String, ArrayMultiType>) -> Result<HashMap<String, ArrayMultiType>, &'static str> {
-    let mut outputs = HashMap::new();
+pub fn execute_graph(graph: &GraphProto, inputs: &mut HashMap<String, ArrayMultiType>, verbose: bool) -> Result<HashMap<String, ArrayMultiType>, &'static str> {
+    let shared_inputs = Arc::new((Mutex::new(inputs.clone()), Condvar::new()));
+    let mut threads = Vec::new();
     
     for node in graph.node.iter() {
-        let node_outputs = execute_node(&node, inputs)?;
-
-        for (name, output) in node_outputs {
-            if graph.output.iter().any(|output| output.name == name) {
-                outputs.insert(name, output);
-            } else {
-                inputs.insert(name, output);
+        let node_clone = node.clone();
+        let verbose_clone = verbose.clone();
+        let shared_inputs_clone = Arc::clone(&shared_inputs);
+        threads.push(thread::spawn(move || {
+            if verbose {
+                println!("{:?} - {:?}: Start node", node_clone.name, node_clone.op_type);
             }
-        }
+            // Aquiring the lock
+            let (lock, cvar) = &*shared_inputs_clone;
+            let mut inputs = lock.lock().unwrap();
+
+            if verbose_clone {
+                println!("{:?} - {:?}: Wait inputs: {:?}", node_clone.name, node_clone.op_type, node_clone.input);
+            }
+            //Check if all inputs are available, if not relese the lock and wait for the condition variable
+            while node_clone.input.iter().any(|input| !inputs.contains_key(input)) {
+                inputs = cvar.wait(inputs).unwrap();
+            }
+            // Get the inputs and relese the lock
+            let inputs_clone = inputs.clone();
+            drop(inputs);
+
+            if verbose_clone {
+                println!("{:?} - {:?}: Execute node", node_clone.name, node_clone.op_type);
+            }
+            // Execute the nod
+            let node_outputs = execute_node(&node_clone, &inputs_clone).unwrap();
+            
+            // Aquiring the lock
+            let (lock, cvar) = &*shared_inputs_clone;
+            let mut inputs = lock.lock().unwrap();
+
+            // Update the inputs and notify the condition variable
+            if verbose {
+                println!("{:?} - {:?}: Update inputs: {:?}", node_clone.name, node_clone.op_type, node_outputs.keys());
+            }
+            inputs.extend(node_outputs);
+            cvar.notify_all();
+        }));
     }
+
+    for thread in threads {
+        thread.join().unwrap();
+    }
+
+    let (lock, _) = &*shared_inputs;
+    let inputs = lock.lock().unwrap();
+    let outputs = graph.output.iter().map(|output| (output.name.clone(), inputs.get(&output.name).unwrap().clone())).collect::<HashMap<String, ArrayMultiType>>();
 
     Ok(outputs)
 }
