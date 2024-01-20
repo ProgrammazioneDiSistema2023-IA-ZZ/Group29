@@ -56,7 +56,7 @@ pub fn execute_node(node: &NodeProto, inputs:  &HashMap<String, ArrayMultiType>)
                 3.. => Some(input_tensors[2]),
                 _=> None
             };
-            let output = ArrayMultiType::convolution(input_tensors[0], input_tensors[1], bias, &auto_pad, &dilations, group, &kernel_shape, &pads, &strides);
+            let output = ArrayMultiType::convolution(input_tensors[0], input_tensors[1], bias, Some(auto_pad.as_str()), &dilations, group, &kernel_shape, Some(pads.as_slice()), &strides);
             outputs.insert(node.output[0].clone(), output)
         },
         "Relu" => outputs.insert(node.output[0].clone(), ArrayMultiType::relu(input_tensors[0])),
@@ -82,6 +82,11 @@ pub fn execute_node(node: &NodeProto, inputs:  &HashMap<String, ArrayMultiType>)
             let indices = &input_tensors[1].to_vec_usize();
             outputs.insert(node.output[0].clone(), ArrayMultiType::gather(input_tensors[0], indices, axis))
         },
+        "BatchNormalization" => {
+            None
+        }
+
+
         _ => return Err("Operation not supported")        
     };
     // Print node information

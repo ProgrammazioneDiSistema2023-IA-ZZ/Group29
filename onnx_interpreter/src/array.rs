@@ -376,15 +376,15 @@ impl ArrayMultiType {
     }
 
     pub fn convolution(
-        input: &ArrayMultiType, // Input tensor X
-        weights: &ArrayMultiType, // Weight tensor W
-        bias: Option<&ArrayMultiType>, // Optional Bias tensor B
-        auto_pad: &str, // auto_pad attribute
-        dilations: &Vec<i64>, // dilations attribute
-        group: i64, // group attribute
-        kernel_shape: &Vec<i64>, // kernel_shape attribute
-        pads: &Vec<i64>, // pads attribute
-        strides: &Vec<i64>, // strides attribute
+        input: &ArrayMultiType,
+        weights: &ArrayMultiType,
+        bias: Option<&ArrayMultiType>,
+        auto_pad: Option<&str>,  // Cambiato da &str a Option<&str>
+        dilations: &[i64],
+        group: i64,
+        kernel_shape: &[i64],
+        pads: Option<&[i64]>,   // Cambiato da &Vec<i64> a Option<&[i64]>
+        strides: &[i64],
     ) -> ArrayMultiType {
         match (input, weights, bias) {
             (ArrayMultiType::FLOAT(input), ArrayMultiType::FLOAT(weights), Some(ArrayMultiType::FLOAT(bias))) => {
@@ -471,5 +471,38 @@ impl ArrayMultiType {
             _ => panic!("Gather op does not support this data type")
         }
             
+    }
+
+    pub fn batch_normalization(
+        x: &ArrayMultiType,
+        scale: &ArrayMultiType,
+        b: &ArrayMultiType,
+        input_mean: &ArrayMultiType,
+        input_var: &ArrayMultiType,
+        epsilon: f32,
+        momentum: f32,
+        training_mode: bool
+    ) -> (ArrayMultiType, Option<ArrayMultiType>, Option<ArrayMultiType>) {
+        match (x, scale, b, input_mean, input_var) {
+            (
+                ArrayMultiType::FLOAT(x),
+                ArrayMultiType::FLOAT(scale),
+                ArrayMultiType::FLOAT(b),
+                ArrayMultiType::FLOAT(input_mean),
+                ArrayMultiType::FLOAT(input_var),
+            ) => {
+                let (y, updated_mean, updated_var) = batch_normalization(
+                    x, scale, b, input_mean, input_var, epsilon, momentum, training_mode
+                );
+
+                (
+                    ArrayMultiType::FLOAT(y),
+                    updated_mean.map(ArrayMultiType::FLOAT),
+                    updated_var.map(ArrayMultiType::FLOAT),
+                )
+            },
+            // Puoi aggiungere altri tipi di dati se necessario
+            _ => panic!("Batch normalization does not support this data type combination"),
+        }
     }
 }

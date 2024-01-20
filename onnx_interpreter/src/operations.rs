@@ -837,144 +837,173 @@ where
     input.mapv(|x| if x > T::default() { x } else { T::default() })
 }
 
-fn apply_padding<T>(input: &Array<T, IxDyn>, pads: &[i64]) -> Array<T, IxDyn>
+fn calculate_padding(
+    input_shape: &[i64],
+    kernel_shape: &[i64],
+    strides: &[i64],
+    dilations: &[i64],
+    auto_pad: Option<&str>,
+    pads: Option<&[i64]>
+) -> Vec<i64> {
+    match auto_pad {
+        Some(pad) if pad == "SAME_UPPER" || pad == "SAME_LOWER" => {
+            let mut new_pads = vec![0; kernel_shape.len() * 2];
+            for i in 0..kernel_shape.len() {
+                let input_size = input_shape[i + 2];
+                let filter_size = (kernel_shape[i] - 1) * dilations[i] + 1;
+                let output_size = (input_size + strides[i] - 1) / strides[i];
+                let total_padding = if output_size * strides[i] + filter_size > input_size + strides[i] {
+                    output_size * strides[i] + filter_size - input_size - strides[i]
+                } else {
+                    0
+                };
+                if pad == "SAME_UPPER" {
+                    new_pads[i * 2] = total_padding / 2;
+                    new_pads[i * 2 + 1] = total_padding - new_pads[i * 2];
+                } else { // SAME_LOWER
+                    new_pads[i * 2 + 1] = total_padding / 2;
+                    new_pads[i * 2] = total_padding - new_pads[i * 2 + 1];
+                }
+            }
+            new_pads
+        }
+        Some(pad) if pad == "VALID" => {
+            vec![0; kernel_shape.len() * 2]
+        }
+        _ => {
+            pads.unwrap_or(&vec![0; input_shape.len() * 2]).to_vec()
+        }
+    }
+}
+
+
+fn apply_padding<T>(
+    input: &Array<T, IxDyn>, 
+    pads: &[i64]
+) -> Array<T, IxDyn>
 where
     T: Default + Clone,
 {
-    // Assuming 2D convolution for simplicity. For higher dimensions, this needs to be extended.
-    let pad_top = pads[0] as usize;
-    let pad_left = pads[1] as usize;
-    let pad_bottom = pads[2] as usize;
-    let pad_right = pads[3] as usize;
-
     let mut padded_shape = input.raw_dim();
-    padded_shape[2] += pad_top + pad_bottom; // Height dimension
-    padded_shape[3] += pad_left + pad_right; // Width dimension
+    
+    for (i, &pad) in pads.iter().enumerate() {
+        if i % 2 == 0 {  // Padding di inizio
+            padded_shape[i / 2] += pad as usize;
+        } else {  // Padding di fine
+            padded_shape[i / 2] += pad as usize;
+        }
+    }
 
     let mut padded_input = Array::<T, _>::default(padded_shape);
-
-    // Copying the input tensor into the center of the padded tensor
-    let slice_s = s![
-        ..,
-        ..,
-        pad_top..(pad_top + input.shape()[2]),
-        pad_left..(pad_left + input.shape()[3])
-    ];
+    let slice_s = if pads.iter().all(|&pad| pad == 0) {
+        s![.., .., .., ..] // No padding, use the entire dimension
+    } else {
+        // Calculate start and end indices for height and width dimensions
+        let height_start = pads[0] as isize;
+        let height_end = if pads[2] > 0 { -(pads[2] as isize) } else { isize::MAX };
+        let width_start = pads[1] as isize;
+        let width_end = if pads[3] > 0 { -(pads[3] as isize) } else { isize::MAX };
+    
+        s![.., .., height_start..height_end, width_start..width_end]
+    };
     padded_input.slice_mut(slice_s).assign(input);
 
     padded_input
 }
 
-// Funzione convolution aggiornata per includere il padding
 pub fn convolution<T>(
-    input: &Array<T, IxDyn>, // Input tensor X
-    weights: &Array<T, IxDyn>, // Weight tensor W
-    bias: Option<&Array<T, IxDyn>>, // Optional Bias tensor B
-    auto_pad: &str, // auto_pad attribute
-    dilations: &Vec<i64>, // dilations attribute
-    group: i64, // group attribute
-    kernel_shape: &Vec<i64>, // kernel_shape attribute
-    pads: &Vec<i64>, // pads attribute
-    strides: &Vec<i64>, // strides attribute
+    input: &Array<T, IxDyn>,
+    weights: &Array<T, IxDyn>,
+    bias: Option<&Array<T, IxDyn>>,
+    auto_pad: Option<&str>,
+    dilations: &[i64],
+    group: i64,
+    kernel_shape: &[i64],
+    pads: Option<&[i64]>,
+    strides: &[i64],
 ) -> Array<T, IxDyn>
 where
-    T: std::ops::Add<Output = T> + std::ops::Mul<Output = T> + Copy + Default + Clone + Zero,
+    T: Default + Clone + Add<Output = T> + Mul<Output = T> + Copy + Zero,
 {
-    // Determina il padding necessario
     let input_shape = input.dim();
-    let actual_pads = if auto_pad != "NOTSET" {
-        let mut pad = vec![0; kernel_shape.len() * 2];  // Due valori di padding per dimensione (inizio e fine)
-    
-        for (i, &k) in kernel_shape.iter().enumerate() {
-            let input_size = input_shape[i + 2] as i64;  // +2 per saltare le prime due dimensioni (N e C)
-            let stride = strides[i] as i64;
-            let output_size = (input_size + stride - 1) / stride;  // Calcola le dimensioni dell'output
-            let total_pad = (output_size - 1) * stride + k as i64 - input_size;  // Calcola il padding totale necessario
-            if auto_pad == "SAME_UPPER" {
-                pad[i * 2] = total_pad / 2;  // Padding all'inizio
-                pad[i * 2 + 1] = total_pad - pad[i * 2];  // Padding alla fine
-            } else if auto_pad == "SAME_LOWER" {
-                pad[i * 2 + 1] = total_pad / 2;  // Padding alla fine
-                pad[i * 2] = total_pad - pad[i * 2 + 1];  // Padding all'inizio
-            }
-        }
-        pad
-    } else {
-        pads.to_vec()
-    };
+    println!("Input shape: {:?}", input_shape);
 
-    // Applica il padding al tensore di input
+    let input_shape_vec: Vec<i64> = input_shape.slice().iter().map(|&dim| dim as i64).collect();
+    let actual_pads = calculate_padding(&input_shape_vec, kernel_shape, strides, dilations, auto_pad, pads);
+    println!("Actual Pads: {:?}", actual_pads);
+
     let padded_input = apply_padding(input, &actual_pads);
 
-    // Calcola le dimensioni del tensore di output
-    let input_shape = padded_input.dim();
+    // Correct calculation of output dimensions
+    let output_height = ((input_shape[2] as i64 - kernel_shape[0] + actual_pads[0] + actual_pads[2]) / strides[0] + 1) as usize;
+    let output_width = ((input_shape[3] as i64 - kernel_shape[1] + actual_pads[1] + actual_pads[3]) / strides[1] + 1) as usize;
 
-    // Converte tutti i valori coinvolti in usize prima di eseguire operazioni
-    let kernel_height = kernel_shape[0] as usize;
-    let kernel_width = kernel_shape[1] as usize;
-    let pad_top = actual_pads[0] as usize;
-    let pad_left = actual_pads[1] as usize;
 
-    let output_height = ((input_shape[2] - kernel_height + 2 * pad_top) / strides[0] as usize) + 1;
-    let output_width = ((input_shape[3] - kernel_width + 2 * pad_left) / strides[1] as usize) + 1;
+    println!("Kernel shape: {:?}", kernel_shape);
+    println!("Strides: {:?}", strides);
+    println!("Dilations: {:?}", dilations);
 
-    let output_shape = vec![input_shape[0], weights.dim()[0], output_height, output_width];
+    println!("Output height: {}", output_height);
+    println!("Output width: {}", output_width);
+
+    // Validate the output dimensions
+    if output_height <= 0 || output_width <= 0 {
+        panic!("Invalid output dimensions computed: height {}, width {}. Check kernel size, padding, strides, and input dimensions.", output_height, output_width);
+    }   
+
+
+    let output_channels = weights.dim()[0];
+    let output_shape = vec![input_shape[0], output_channels, output_height, output_width];
+
     let mut output = Array::<T, _>::zeros(IxDyn(&output_shape));
 
-    // Converti output in una vista mutabile
-    let mut output_view_mut = output.view_mut();
 
-        // Calcola le dimensioni dei gruppi
     let num_groups = group as usize;
     let input_group_size = input_shape[1] / num_groups;
     let weight_group_size = weights.dim()[1] / num_groups;
 
-    // Itera sui gruppi
-    for g in 0..num_groups {
-        // Calcola gli indici di inizio e fine per il gruppo corrente
-        let input_group_start = g * input_group_size;
-        let weight_group_start = g * weight_group_size;
-        let weight_group_end = weight_group_start + weight_group_size;
+    for n in 0..input_shape[0] {
+        for g in 0..num_groups {
+            let input_group_slice = s![.., g * input_group_size..(g + 1) * input_group_size, .., ..];
+            let weight_group_slice = s![.., g * weight_group_size..(g + 1) * weight_group_size, .., ..];
 
-        // Utilizza par_iter_mut per iterare parallelamente sulla vista mutabile
-        output_view_mut.indexed_iter_mut().for_each(|(idx, output_element)| {
-            let (n, m, h, w) = (
-                idx[0],
-                idx[1] + weight_group_start,  // Aggiusta l'indice in base al gruppo
-                idx[2],
-                idx[3],
-            );
+            let input_group = padded_input.slice(input_group_slice);
+            let weight_group = weights.slice(weight_group_slice);
 
-            if m < weight_group_end {
-                let mut sum = T::zero();
-
-                for kh in 0..kernel_height {
-                    for kw in 0..kernel_width {
-                        // Aggiungi la dilatazione all'indice
-                        let h_idx = h * strides[0] as usize + kh * dilations[0] as usize;
-                        let w_idx = w * strides[1] as usize + kw * dilations[1] as usize;
-
-                        // Assicurati di utilizzare il canale corretto del gruppo per il tensore di input
-                        let input_channel = n * input_group_size + input_group_start;
-
-                        // Aggiungi la moltiplicazione elemento per elemento al sum
-                        sum = sum + padded_input[[n, input_channel, h_idx, w_idx]] * weights[[m, kh, kw]];
+            for out_y in 0..output_height {
+                for out_x in 0..output_width {
+                    let in_y_start = out_y * strides[0] as usize;
+                    let in_x_start = out_x * strides[1] as usize;
+            
+                    for m in 0..weight_group_size {
+                        let mut sum = T::zero();
+                        for c in 0..input_group_size {
+                            for ky in 0..kernel_shape[0] as usize {
+                                for kx in 0..kernel_shape[1] as usize {
+                                    let in_y = in_y_start + ky * dilations[0] as usize;
+                                    let in_x = in_x_start + kx * dilations[1] as usize;
+                        
+                                    // Correcting the indices for input and weight tensors
+                                    let input_idx = [n, g * input_group_size + c, in_y, in_x];
+                                    let weight_idx = [m, c, ky, kx]; // Corrected weight index
+                        
+                                    sum = sum + input_group[input_idx] * weight_group[weight_idx];
+                                }
+                            }
+                
+                            if let Some(b) = bias {
+                                sum = sum + b[[m + g * weight_group_size]];
+                            }
+                
+                            output[[n, m + g * weight_group_size, out_y, out_x]] = sum;
+                        }
                     }
                 }
-
-                // Aggiungi il bias se presente
-                if let Some(b) = bias {
-                    sum = sum + b[m];
-                }
-
-                // Assegna il valore calcolato al tensore di output
-                *output_element = sum;
             }
-        });
+        }
     }
 
     output
-
 }
 
 
@@ -1246,4 +1275,31 @@ pub fn inference(
 
     // Restituisci i risultati
     output_tensors
+}
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*; // Importa tutto dal modulo genitore
+    use ndarray::{Array, ArrayD, IxDyn}; // Import the necessary ndarray types
+
+    #[test]
+    fn test_convolution_basic() {
+        // Ensure that `input` and `weights` are dynamic-dimension arrays
+        let input_data: Vec<f32> = (0..16).map(|x| x as f32).collect();
+        let input = Array::from_shape_vec((1, 1, 4, 4), input_data).unwrap().into_dyn();
+        let weights = Array::from_shape_vec((1, 1, 3, 3), vec![1.0, 0.0, -1.0, 0.0, 1.0, 0.0, -1.0, 0.0, 1.0]).unwrap().into_dyn();
+        let bias = Some(Array::zeros(IxDyn(&[1])).into_dyn());
+
+        let result = convolution(&input, &weights, bias.as_ref(), None, &[1, 1], 1, &[3, 3], None, &[1, 1]);
+
+        // Ensure that `expected_output` is a dynamic-dimension array for comparison
+        let expected_output: ArrayD<f32> = Array::from_shape_vec(IxDyn(&[1, 1, 2, 2]), vec![5.0, 3.0, -1.0, -3.0]).unwrap().into_dyn();
+
+// Now this assertion should work without type errors
+        assert_eq!(result, expected_output);
+    }
+    
+    // Other test functions...
 }
