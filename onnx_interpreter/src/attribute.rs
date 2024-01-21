@@ -34,7 +34,7 @@ impl Attribute {
                     x if x == AttributeType::Ints as i32 => Ok(Attribute::Ints(ints.clone())),
                     x if x == AttributeType::Strings as i32 => Ok(Attribute::Strings(strings.into_iter().map(|s| String::from_utf8(s.to_vec()).unwrap()).collect())),
                     x if x == AttributeType::Tensors as i32 => {
-                        let mut tensors_vec= tensors.iter().map(|tensor| init_array(tensor).unwrap().1).collect::<Vec<ArrayMultiType>>();
+                        let tensors_vec= tensors.iter().map(|tensor| init_array(tensor).unwrap().1).collect::<Vec<ArrayMultiType>>();
 
                         Ok(Attribute::Tensors(tensors_vec))
                     },

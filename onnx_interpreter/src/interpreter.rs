@@ -29,7 +29,6 @@ pub fn execute_node(node: &NodeProto, inputs:  &HashMap<String, ArrayMultiType>)
             outputs.insert(node.output[0].clone(), ArrayMultiType::concat(input_tensors, axis))
         },
         "Conv" => {
-            println!("Conv {:?}", attributes.keys());
             let kernel_shape = match attributes.get("kernel_shape") {
                 Some(Attribute::Ints(kernel_shape)) => kernel_shape,
                 _ => return Err("Invalid kernel shape")
@@ -150,7 +149,7 @@ pub fn execute_graph(graph: &GraphProto, inputs: &mut HashMap<String, ArrayMulti
     let shared_inputs = Arc::new((Mutex::new(inputs.clone()), Condvar::new()));
     let mut threads = Vec::new();
     
-    for node in graph.node.iter() {
+    for (index, node) in graph.node.iter().enumerate() {
         let node_clone = node.clone();
         let verbose_clone = verbose.clone();
         let shared_inputs_clone = Arc::clone(&shared_inputs);
@@ -163,7 +162,7 @@ pub fn execute_graph(graph: &GraphProto, inputs: &mut HashMap<String, ArrayMulti
             let mut inputs = lock.lock().unwrap();
 
             if verbose_clone {
-                //println!("{:?} - {:?}: Wait inputs: {:?}", node_clone.name, node_clone.op_type, node_clone.input);
+                println!("{:?} - {:?}: Wait inputs: {:?}", node_clone.name, node_clone.op_type, node_clone.input);
             }
             //Check if all inputs are available, if not relese the lock and wait for the condition variable
             while node_clone.input.iter().any(|input| !inputs.contains_key(input)) {
@@ -190,11 +189,20 @@ pub fn execute_graph(graph: &GraphProto, inputs: &mut HashMap<String, ArrayMulti
             inputs.extend(node_outputs);
             cvar.notify_all();
         }));
-    }
 
-    for thread in threads {
-        thread.join().unwrap();
+        if  !verbose {
+            print!("Node launched: {}/{}\r", index + 1, graph.node.len());
+        }
     }
+    println!();
+
+    for (index, thread) in threads.into_iter().enumerate() {
+        thread.join().map_err(|_| "Could not join thread")?;
+        if !verbose {
+            print!("Node terminated: {}/{}\r", index + 1, graph.node.len());
+        }
+    }
+    println!();
 
     let (lock, _) = &*shared_inputs;
     let inputs = lock.lock().unwrap();
