@@ -4,6 +4,7 @@ use ndarray::{Array, IxDyn};
 use onnx::onnx::TensorProto_DataType;
 use ndarray_rand::RandomExt;
 use rand::distributions::{Uniform, uniform::SampleUniform};
+use rayon::array;
 
 use crate::onnx::{TensorShapeProto, tensor_shape_proto::dimension::Value};
 use crate::operations::*;
@@ -67,7 +68,11 @@ impl FromBytes for i64 {
 
 impl FromBytes for bool {
     fn from_le_bytes(bytes: &[u8]) -> Self {
-        bool::from_le_bytes(bytes.try_into().unwrap())
+        let mut result = false;
+        for &byte in bytes {
+            result |= byte != 0;
+        }
+        result
     }
 }
 
@@ -133,6 +138,19 @@ impl ArrayMultiType {
         Ok(ArrayMultiType::INT64(from_vec::<i64>(vec, dims)?))
     }
 
+    pub fn shape(&self) -> &[usize] {
+        match self {
+            ArrayMultiType::FLOAT(a) => a.shape(),
+            ArrayMultiType::UINT8(a) => a.shape(),
+            ArrayMultiType::INT8(a) => a.shape(),
+            ArrayMultiType::UINT16(a) => a.shape(),
+            ArrayMultiType::INT16(a) => a.shape(),
+            ArrayMultiType::INT32(a) => a.shape(),
+            ArrayMultiType::INT64(a) => a.shape(),
+            ArrayMultiType::BOOL(a) => a.shape()
+        }
+    }
+
     pub fn random(shape: &TensorShapeProto, data_type: i32) -> ArrayMultiType {
         match data_type {
             i if i == TensorProto_DataType::FLOAT as i32 => ArrayMultiType::FLOAT(random::<f32>(shape, -1., 1.)),
@@ -156,6 +174,19 @@ impl ArrayMultiType {
             ArrayMultiType::INT32(a) => a.shape().to_vec().iter().map(|&x| x as usize).collect::<Vec<usize>>(),
             ArrayMultiType::INT64(a) => a.shape().to_vec().iter().map(|&x| x as usize).collect::<Vec<usize>>(),
             ArrayMultiType::BOOL(a) => a.shape().to_vec().iter().map(|&x| x as usize).collect::<Vec<usize>>()
+        }
+    }
+
+    pub fn to_vec_i64(&self) -> Vec<i64> {
+        match self {
+            ArrayMultiType::FLOAT(a) => a.shape().to_vec().iter().map(|&x| x as i64).collect::<Vec<i64>>(),
+            ArrayMultiType::UINT8(a) => a.shape().to_vec().iter().map(|&x| x as i64).collect::<Vec<i64>>(),
+            ArrayMultiType::INT8(a) => a.shape().to_vec().iter().map(|&x| x as i64).collect::<Vec<i64>>(),
+            ArrayMultiType::UINT16(a) => a.shape().to_vec().iter().map(|&x| x as i64).collect::<Vec<i64>>(),
+            ArrayMultiType::INT16(a) => a.shape().to_vec().iter().map(|&x| x as i64).collect::<Vec<i64>>(),
+            ArrayMultiType::INT32(a) => a.shape().to_vec().iter().map(|&x| x as i64).collect::<Vec<i64>>(),
+            ArrayMultiType::INT64(a) => a.shape().to_vec().iter().map(|&x| x as i64).collect::<Vec<i64>>(),
+            ArrayMultiType::BOOL(a) => a.shape().to_vec().iter().map(|&x| x as i64).collect::<Vec<i64>>()
         }
     }
 
@@ -504,4 +535,67 @@ impl ArrayMultiType {
             _ => panic!("Batch normalization does not support this data type combination"),
         }
     }
+
+    pub fn reshape(array: &ArrayMultiType, shape: &Vec<i64>) -> ArrayMultiType {
+        match array {
+            ArrayMultiType::FLOAT(a) => ArrayMultiType::FLOAT(reshape(a, shape)),
+            _ => panic!("Reshape op does not support this data type")
+        }
+    }
+
+    pub fn gemm(array_a: &ArrayMultiType, array_b: &ArrayMultiType, array_c: Option<&ArrayMultiType>, alpha: f32, beta: f32, trans_a: bool, trans_b: bool) -> ArrayMultiType {
+        match (array_a, array_b, array_c) {
+            (ArrayMultiType::FLOAT(a), ArrayMultiType::FLOAT(b), Some(ArrayMultiType::FLOAT(c))) => ArrayMultiType::FLOAT(gemm(a, b, Some(c), alpha, beta, trans_a, trans_b).unwrap()),
+            (ArrayMultiType::FLOAT(a), ArrayMultiType::FLOAT(b), None) => ArrayMultiType::FLOAT(gemm(a, b, None, alpha, beta, trans_a, trans_b).unwrap()),  
+            _ => panic!("Gemm op does not support this data type")
+        }
+    }
+
+    pub fn clip(array: &ArrayMultiType, min: Option<&ArrayMultiType>, max: Option<&ArrayMultiType>) -> ArrayMultiType {
+        match (array, min, max) {
+            (ArrayMultiType::FLOAT(a), Some(ArrayMultiType::FLOAT(min)), Some(ArrayMultiType::FLOAT(max))) => ArrayMultiType::FLOAT(clip(a, Some(min[0]), Some(max[0]))),
+            (ArrayMultiType::FLOAT(a), Some(ArrayMultiType::FLOAT(min)), None) => ArrayMultiType::FLOAT(clip(a, Some(min[0]), None)),
+            (ArrayMultiType::FLOAT(a), None, Some(ArrayMultiType::FLOAT(max))) => ArrayMultiType::FLOAT(clip(a, None, Some(max[0]))),
+            (ArrayMultiType::FLOAT(a), None, None) => ArrayMultiType::FLOAT(clip(a, None, None)),
+            (ArrayMultiType::UINT8(a), Some(ArrayMultiType::UINT8(min)), Some(ArrayMultiType::UINT8(max))) => ArrayMultiType::UINT8(clip(a, Some(min[0]), Some(max[0]))),
+            (ArrayMultiType::UINT8(a), Some(ArrayMultiType::UINT8(min)), None) => ArrayMultiType::UINT8(clip(a, Some(min[0]), None)),
+            (ArrayMultiType::UINT8(a), None, Some(ArrayMultiType::UINT8(max))) => ArrayMultiType::UINT8(clip(a, None, Some(max[0]))),
+            (ArrayMultiType::UINT8(a), None, None) => ArrayMultiType::UINT8(clip(a, None, None)),
+            (ArrayMultiType::INT8(a), Some(ArrayMultiType::INT8(min)), Some(ArrayMultiType::INT8(max))) => ArrayMultiType::INT8(clip(a, Some(min[0]), Some(max[0]))),
+            (ArrayMultiType::INT8(a), Some(ArrayMultiType::INT8(min)), None) => ArrayMultiType::INT8(clip(a, Some(min[0]), None)),
+            (ArrayMultiType::INT8(a), None, Some(ArrayMultiType::INT8(max))) => ArrayMultiType::INT8(clip(a, None, Some(max[0]))),
+            (ArrayMultiType::INT8(a), None, None) => ArrayMultiType::INT8(clip(a, None, None)),
+            (ArrayMultiType::UINT16(a), Some(ArrayMultiType::UINT16(min)), Some(ArrayMultiType::UINT16(max))) => ArrayMultiType::UINT16(clip(a, Some(min[0]), Some(max[0]))),
+            (ArrayMultiType::UINT16(a), Some(ArrayMultiType::UINT16(min)), None) => ArrayMultiType::UINT16(clip(a, Some(min[0]), None)),
+            (ArrayMultiType::UINT16(a), None, Some(ArrayMultiType::UINT16(max))) => ArrayMultiType::UINT16(clip(a, None, Some(max[0]))),
+            (ArrayMultiType::UINT16(a), None, None) => ArrayMultiType::UINT16(clip(a, None, None)),
+            (ArrayMultiType::INT16(a), Some(ArrayMultiType::INT16(min)), Some(ArrayMultiType::INT16(max))) => ArrayMultiType::INT16(clip(a, Some(min[0]), Some(max[0]))),
+            (ArrayMultiType::INT16(a), Some(ArrayMultiType::INT16(min)), None) => ArrayMultiType::INT16(clip(a, Some(min[0]), None)),
+            (ArrayMultiType::INT16(a), None, Some(ArrayMultiType::INT16(max))) => ArrayMultiType::INT16(clip(a, None, Some(max[0]))),
+            (ArrayMultiType::INT16(a), None, None) => ArrayMultiType::INT16(clip(a, None, None)),
+            (ArrayMultiType::INT32(a), Some(ArrayMultiType::INT32(min)), Some(ArrayMultiType::INT32(max))) => ArrayMultiType::INT32(clip(a, Some(min[0]), Some(max[0]))),
+            (ArrayMultiType::INT32(a), Some(ArrayMultiType::INT32(min)), None) => ArrayMultiType::INT32(clip(a, Some(min[0]), None)),
+            (ArrayMultiType::INT32(a), None, Some(ArrayMultiType::INT32(max))) => ArrayMultiType::INT32(clip(a, None, Some(max[0]))),
+            (ArrayMultiType::INT32(a), None, None) => ArrayMultiType::INT32(clip(a, None, None)),
+            (ArrayMultiType::INT64(a), Some(ArrayMultiType::INT64(min)), Some(ArrayMultiType::INT64(max))) => ArrayMultiType::INT64(clip(a, Some(min[0]), Some(max[0]))),
+            (ArrayMultiType::INT64(a), Some(ArrayMultiType::INT64(min)), None) => ArrayMultiType::INT64(clip(a, Some(min[0]), None)),
+            (ArrayMultiType::INT64(a), None, Some(ArrayMultiType::INT64(max))) => ArrayMultiType::INT64(clip(a, None, Some(max[0]))),
+            (ArrayMultiType::INT64(a), None, None) => ArrayMultiType::INT64(clip(a, None, None)),
+            _ => panic!("Clip op does not support this data type")
+        }
+    }
+
+    pub fn unsqueeze(array: &ArrayMultiType, axes: &Vec<i64>) -> ArrayMultiType {
+        match array {
+            ArrayMultiType::FLOAT(a) => ArrayMultiType::FLOAT(unsqueeze(a, axes)),
+            ArrayMultiType::UINT8(a) => ArrayMultiType::UINT8(unsqueeze(a, axes)),
+            ArrayMultiType::INT8(a) => ArrayMultiType::INT8(unsqueeze(a, axes)),
+            ArrayMultiType::UINT16(a) => ArrayMultiType::UINT16(unsqueeze(a, axes)),
+            ArrayMultiType::INT16(a) => ArrayMultiType::INT16(unsqueeze(a, axes)),
+            ArrayMultiType::INT32(a) => ArrayMultiType::INT32(unsqueeze(a, axes)),
+            ArrayMultiType::INT64(a) => ArrayMultiType::INT64(unsqueeze(a, axes)),
+            _ => panic!("Unsqueeze op does not support this data type")
+        }
+    }
+
 }

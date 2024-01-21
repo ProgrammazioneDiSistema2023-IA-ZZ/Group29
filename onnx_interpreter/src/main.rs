@@ -18,10 +18,15 @@ fn main() {
 
     let mut inputs = get_inputs(&graph).unwrap();
 
-    for input in graph.input.iter() {
-        println!("Input: {:?}", inputs.get(&input.name).unwrap());
+    for (name, input) in inputs.iter() {
+        println!("Input: {:?}, shape: {:?}", name, input.shape());
     }
 
+    for node in graph.node.iter() {
+        if node.op_type == "Reshape" || node.op_type == "Clip" {
+            //println!("Node: {:?}", node);
+        }
+    }
 
     let outputs = execute_graph(&graph, &mut inputs, true).unwrap();
 

@@ -92,6 +92,50 @@ pub fn execute_node(node: &NodeProto, inputs:  &HashMap<String, ArrayMultiType>)
             };
             outputs.insert(node.output[0].clone(), value.clone())
         },
+        "Reshape" => {
+            let shape = input_tensors[1].to_vec_i64();
+            outputs.insert(node.output[0].clone(), ArrayMultiType::reshape(input_tensors[0], &shape))
+        },
+        "Gemm" => {
+            let alpha = match attributes.get("alpha") {
+                Some(Attribute::Float(alpha)) => *alpha,
+                _ => return Err("Invalid alpha")
+            };
+            let beta = match attributes.get("beta") {
+                Some(Attribute::Float(beta)) => *beta,
+                _ => return Err("Invalid beta")
+            };
+            let trans_a = match attributes.get("transA") {
+                Some(Attribute::Int(a)) => *a != 0,
+                _ => return Err("Invalid transA")
+            };
+            let trans_b = match attributes.get("transB") {
+                Some(Attribute::Int(b)) => *b != 0,
+                _ => return Err("Invalid transB")
+            };
+            let bias = match input_tensors.len() {
+                3.. => Some(input_tensors[2]),
+                _=> None
+            };
+
+            outputs.insert(node.output[0].clone(), ArrayMultiType::gemm(input_tensors[0], input_tensors[1], bias, alpha, beta, trans_a, trans_b))
+        },
+        "Clip" => {
+            let min = match input_tensors.len() {
+                2.. => Some(input_tensors[1]),
+                _=> None
+            };
+            let max = match input_tensors.len() {
+                3.. => Some(input_tensors[2]),
+                _=> None
+            };
+
+            outputs.insert(node.output[0].clone(), ArrayMultiType::clip(input_tensors[0], min, max))
+        },
+        "Unsqueeze" => {
+            let axes = input_tensors[1].to_vec_i64();
+            outputs.insert(node.output[0].clone(), ArrayMultiType::unsqueeze(input_tensors[0], &axes))
+        },
         _ => return Err("Operation not supported")        
     };
     // Print node information

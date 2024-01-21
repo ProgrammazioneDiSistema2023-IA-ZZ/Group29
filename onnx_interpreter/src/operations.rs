@@ -326,7 +326,7 @@ where
     squeezed.to_owned()
 }
 
-pub fn unsqueeze<A>(data: &Array<A, IxDyn>, axes: &[i64]) -> ArrayD<A>
+pub fn unsqueeze<A>(data: &Array<A, IxDyn>, axes: &Vec<i64>) -> ArrayD<A>
 where
     A: Clone,
 {
@@ -1163,27 +1163,30 @@ where
 }
 
 pub fn gemm<S>(
-    a: &ArrayBase<S, Ix2>,
-    b: &ArrayBase<S, Ix2>,
-    c: Option<&ArrayBase<S, Ix2>>,
+    a: &ArrayBase<S, IxDyn>,
+    b: &ArrayBase<S, IxDyn>,
+    c: Option<&ArrayBase<S, IxDyn>>,
     alpha: f32,
     beta: f32,
     trans_a: bool,
     trans_b: bool
-) -> Array2<f32>
+) -> Result<Array<f32, IxDyn>, &'static str>
 where
     S: Data<Elem = f32>,
-{
-    let a = if trans_a { a.t() } else { a.view() };
-    let b = if trans_b { b.t() } else { b.view() };
+{   
+    let a_2 = a.view().into_dimensionality::<ndarray::Ix2>().map_err(|_| "Tensor A with wrong dimensionality")?;
+    let b_2 = b.view().into_dimensionality::<ndarray::Ix2>().map_err(|_| "Tensor B with wrong dimensionality")?;  
+    let a = if trans_a { a_2.t() } else { a_2.view() };
+    let b = if trans_b { b_2.t() } else { b_2.view() };
 
     let mut result = a.dot(&b) * alpha;
 
     if let Some(c) = c {
-        result = result + c * beta;
+        let c_2 = c.view().into_dimensionality::<ndarray::Ix2>().map_err(|_| "Tensor C with wrong dimensionality")?.to_owned();
+        result = result + &c_2 * beta;
     }
 
-    result
+    Ok(result.into_dyn())
 }
 
 // Funzione Flatten
