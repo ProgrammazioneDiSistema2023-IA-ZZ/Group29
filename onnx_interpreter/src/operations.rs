@@ -12,7 +12,7 @@ use ndarray_parallel::prelude::*;
 
 // use crate::AutoPad::*;
 enum AutoPad {NotSet, SameUpper, SameLower, Valid}
-enum Error {AutoPadError, KernelShapeError, DilationError, PadsError, StridesError}
+pub enum Error {AutoPadError, KernelShapeError, DilationError, PadsError, StridesError}
 
 // Funzione per stampare una lista di tensori
 pub fn print_tensors(tensors: Vec<Array2<f32>>) {
@@ -1021,12 +1021,13 @@ pub fn max_from_slice<T: PartialOrd + Copy> (slice: &ArrayViewD<T>) -> T {
 
 pub fn max_pool<T: Sync + Send + Float> (tensor: &Array<T, IxDyn>, auto_pad: Option<&str>,
                                          ceil_mode: Option<bool>, dilations: Option<Vec<isize>>,
-                                         mut kernel_shape: Vec<isize>, pads: Option<Vec<isize>>,
+                                         kernel_shape: Vec<isize>, pads: Option<Vec<isize>>,
                                          storage_order: Option<bool>, strides: Option<Vec<isize>>) -> Result<Array<T, IxDyn>, Error> {
-    //todo: auto_pad, ceil_mode, storage_order
+    //auto_pad, ceil_mode and storage_order not implemented
 
-    if kernel_shape.len() != tensor.ndim() { return Err(Error::KernelShapeError) }
+    if kernel_shape.len() != tensor.ndim()-2 { return Err(Error::KernelShapeError) }
     if kernel_shape.iter().any(|x| *x<=0) { return Err(Error::KernelShapeError) }
+    let kernel_shape = [1, 1].into_iter().chain(kernel_shape.into_iter()).collect::<Vec<_>>();
 
     let auto_pad = match auto_pad {
         None => AutoPad::NotSet,
@@ -1041,19 +1042,22 @@ pub fn max_pool<T: Sync + Send + Float> (tensor: &Array<T, IxDyn>, auto_pad: Opt
 
     let ceil_mode = ceil_mode.unwrap_or(false);
 
-    let dilations = dilations.unwrap_or(vec![1; tensor.ndim()]);
-    if dilations.len() != tensor.ndim() { return Err(Error::DilationError) }
+    let dilations = dilations.unwrap_or(vec![1; tensor.ndim()-2]);
+    if dilations.len() != tensor.ndim()-2 { return Err(Error::DilationError) }
     if dilations.iter().any(|x| *x<=0) { return Err(Error::DilationError) }
+    let dilations = [1, 1].into_iter().chain(dilations.into_iter()).collect::<Vec<_>>();
 
-    let pads = pads.unwrap_or(vec![0; 2*tensor.ndim()]);
-    if pads.len() != 2*tensor.ndim() { return Err(Error::PadsError) }
+    let pads = pads.unwrap_or(vec![0; 2*tensor.ndim()-4]);
+    if pads.len() != 2*tensor.ndim()-4 { return Err(Error::PadsError) }
     if pads.iter().any(|x| *x<0) { return Err(Error::PadsError) }
+    let pads = [0, 0, 0, 0].into_iter().chain(pads.into_iter()).collect::<Vec<_>>();
 
     let storage_order = storage_order.unwrap_or(false);
 
-    let strides = strides.unwrap_or(vec![1; tensor.ndim()]);
-    if strides.len() != tensor.ndim() { return Err(Error::StridesError) }
+    let strides = strides.unwrap_or(vec![1; tensor.ndim()-2]);
+    if strides.len() != tensor.ndim()-2 { return Err(Error::StridesError) }
     if strides.iter().any(|x| *x<=0) { return Err(Error::StridesError) }
+    let strides = [1, 1].into_iter().chain(strides.into_iter()).collect::<Vec<_>>();
 
     //Padding
     let pads_begin = &pads[0..tensor.ndim()];
