@@ -843,7 +843,7 @@ fn calculate_padding(
     strides: &[i64],
     dilations: &[i64],
     auto_pad: Option<&str>,
-    pads: Option<&[i64]>
+    pads: Option<Vec<i64>>
 ) -> Vec<i64> {
     match auto_pad {
         Some(pad) if pad == "SAME_UPPER" || pad == "SAME_LOWER" => {
@@ -871,7 +871,7 @@ fn calculate_padding(
             vec![0; kernel_shape.len() * 2]
         }
         _ => {
-            pads.unwrap_or(&vec![0; input_shape.len() * 2]).to_vec()
+            pads.unwrap_or(vec![0; input_shape.len() * 2])
         }
     }
 }
@@ -944,6 +944,11 @@ pub fn convolution<T>(
 where
     T: Default + Clone + Add<Output = T> + Mul<Output = T> + Copy + Zero,
 {
+    let pads = pads.map(move |x| {
+        let mut v = Vec::from(&[0, 0, 0, 0]);
+        v.append(&mut Vec::from(x));
+        v
+    });
     let input_shape = input.dim();
     let actual_pads = calculate_padding(&input_shape.slice().iter().map(|&dim| dim as i64).collect::<Vec<i64>>(), kernel_shape, strides, dilations, auto_pad, pads);
     let padded_input = apply_padding(input, &actual_pads);
