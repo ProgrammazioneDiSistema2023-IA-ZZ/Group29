@@ -9,7 +9,7 @@ use onnx_interpreter::utils::*;
 fn main() {
     //Read the model
     // let path = "models/mobilenetv2-12.onnx";
-    // let path = "models/shufflenet-v2-12.onnx";
+    //let path = "models/shufflenet-v2-12.onnx";
     let path = "models/linear_regression.onnx";
 
 

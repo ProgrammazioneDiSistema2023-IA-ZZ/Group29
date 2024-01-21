@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::thread;
 use std::sync::{Arc, Mutex};
+use std::sync::mpsc;
 
 use crate::onnx::attribute_proto::AttributeType;
 use crate::onnx::type_proto::Value as ProtoValue;
@@ -42,32 +43,53 @@ fn random_array(info: &ValueInfoProto) -> Result<(String, ArrayMultiType), &'sta
     Ok((name, array))
 }
 
-pub fn get_inputs(graph: &GraphProto) -> Result<HashMap<String, ArrayMultiType>, &'static str> {
+pub fn get_inputs(graph: &GraphProto) -> Result<HashMap<String, ArrayMultiType>, String> {
+    let (tx, rx) = mpsc::channel();
     let shared_inputs = Arc::new(Mutex::new(HashMap::new()));
     let mut threads = Vec::new();
 
     for input in graph.input.iter() {
-        let input_clone = input.clone(); // Clone the input variable
-        let shared_inputs_clone = Arc::clone(&shared_inputs); // Clone the shared_inputs variable
+        let input_clone = input.clone();
+        let shared_inputs_clone = Arc::clone(&shared_inputs);
+        let tx_clone = tx.clone();
         threads.push(thread::spawn(move || {
-            let (name, array) = random_array(&input_clone).unwrap();
-            let mut inputs = shared_inputs_clone.lock().unwrap();
-            inputs.insert(name, array);
+            match random_array(&input_clone) {
+                Ok((name, array)) => {
+                    let mut inputs = shared_inputs_clone.lock().unwrap();
+                    inputs.insert(name, array);
+                    tx_clone.send(Ok(())).unwrap();
+                },
+                Err(e) => tx_clone.send(Err(e.to_string())).unwrap(),
+            }
         }));
     }
 
     for initializer in graph.initializer.iter() {
-        let initializer_clone = initializer.clone(); // Clone the initializer variable
-        let shared_inputs_clone = Arc::clone(&shared_inputs); // Clone the shared_inputs variable
+        let initializer_clone = initializer.clone();
+        let shared_inputs_clone = Arc::clone(&shared_inputs);
+        let tx_clone = tx.clone();  // Clone the transmitter for use in this thread
         threads.push(thread::spawn(move || {
-            let (name, array) = init_array(&initializer_clone).unwrap();
-            let mut inputs = shared_inputs_clone.lock().unwrap();
-            inputs.insert(name, array);
+            match init_array(&initializer_clone) {
+                Ok((name, array)) => {
+                    let mut inputs = shared_inputs_clone.lock().unwrap();
+                    inputs.insert(name, array);
+                    tx_clone.send(Ok(())).unwrap();
+                },
+                Err(e) => tx_clone.send(Err(e.to_string())).unwrap(),
+            }
         }));
     }
 
     for thread in threads {
         thread.join().unwrap();
+    }
+
+    // Collect and handle results
+    for _ in 0..graph.input.len() + graph.initializer.len() {
+        let result = rx.recv().unwrap();
+        if let Err(e) = result {
+            return Err(e); // Propagate the error
+        }
     }
 
     let inputs = shared_inputs.lock().unwrap();
@@ -79,12 +101,18 @@ pub fn get_attributes(node: &NodeProto) -> Result<HashMap<String, Attribute>, &'
     let mut threads = Vec::new();
 
     for attribute in node.attribute.iter() {
-        let attribute_clone = attribute.clone(); // Clone the attribute variable
-        let shared_attributes_clone = Arc::clone(&shared_attributes); // Clone the shared_attributes variable
+        let attribute_clone = attribute.clone();
+        let shared_attributes_clone = Arc::clone(&shared_attributes);
         threads.push(thread::spawn(move || {
-            let attribute = Attribute::from_proto(&attribute_clone).unwrap();
-            let mut attributes = shared_attributes_clone.lock().unwrap();
-            attributes.insert(attribute_clone.name.clone(), attribute);
+            match Attribute::from_proto(&attribute_clone) {
+                Ok(attribute) => {
+                    let mut attributes = shared_attributes_clone.lock().unwrap();
+                    attributes.insert(attribute_clone.name.clone(), attribute);
+                },
+                Err(e) => {
+                    eprintln!("Error processing attribute: {}", e);
+                }
+            }
         }));
     }
 

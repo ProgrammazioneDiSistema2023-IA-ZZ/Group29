@@ -117,7 +117,7 @@ pub fn execute_graph(graph: &GraphProto, inputs: &mut HashMap<String, ArrayMulti
             let mut inputs = lock.lock().unwrap();
 
             if verbose_clone {
-                println!("{:?} - {:?}: Wait inputs: {:?}", node_clone.name, node_clone.op_type, node_clone.input);
+                //println!("{:?} - {:?}: Wait inputs: {:?}", node_clone.name, node_clone.op_type, node_clone.input);
             }
             //Check if all inputs are available, if not relese the lock and wait for the condition variable
             while node_clone.input.iter().any(|input| !inputs.contains_key(input)) {
