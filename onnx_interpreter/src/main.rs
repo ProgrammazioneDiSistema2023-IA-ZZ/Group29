@@ -7,8 +7,8 @@ use onnx_interpreter::utils::*;
 
 fn main() {
     //Read the model
-    let path = "models/mobilenetv2-12.onnx";
-    // let path = "models/shufflenet-v2-12.onnx";
+    // let path = "models/mobilenetv2-12.onnx";
+    let path = "models/shufflenet-v2-12.onnx";
     // let path = "models/linear_regression.onnx";
 
     let model = file::read::<ModelProto>(path).unwrap();
@@ -21,8 +21,13 @@ fn main() {
     // }
 
     let distinc_op = graph.node.iter().map(|node| node.op_type.clone()).collect::<HashSet<String>>();
-
     println!("Distinct op: {:?}", distinc_op);
+
+    for node in graph.node.iter() {
+        if node.op_type == "BatchNormalization" {
+            println!("Node: {:?}", node);
+        }
+    }
 
     let outputs = execute_graph(&graph, &mut inputs, false).unwrap();
 

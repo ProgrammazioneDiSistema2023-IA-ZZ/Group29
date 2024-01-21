@@ -503,36 +503,12 @@ impl ArrayMultiType {
             
     }
 
-    pub fn batch_normalization(
-        x: &ArrayMultiType,
-        scale: &ArrayMultiType,
-        b: &ArrayMultiType,
-        input_mean: &ArrayMultiType,
-        input_var: &ArrayMultiType,
-        epsilon: f32,
-        momentum: f32,
-        training_mode: bool
-    ) -> (ArrayMultiType, Option<ArrayMultiType>, Option<ArrayMultiType>) {
-        match (x, scale, b, input_mean, input_var) {
-            (
-                ArrayMultiType::FLOAT(x),
-                ArrayMultiType::FLOAT(scale),
-                ArrayMultiType::FLOAT(b),
-                ArrayMultiType::FLOAT(input_mean),
-                ArrayMultiType::FLOAT(input_var),
-            ) => {
-                let (y, updated_mean, updated_var) = batch_normalization(
-                    x, scale, b, input_mean, input_var, epsilon, momentum, training_mode
-                );
-
-                (
-                    ArrayMultiType::FLOAT(y),
-                    updated_mean.map(ArrayMultiType::FLOAT),
-                    updated_var.map(ArrayMultiType::FLOAT),
-                )
+    pub fn batch_normalization(array: &ArrayMultiType, scale: &ArrayMultiType, bias: &ArrayMultiType, mean: &ArrayMultiType, variance: &ArrayMultiType, epsilon: f32, momentum: f32, training_mode: bool) -> ArrayMultiType {
+        match (array, scale, bias, mean, variance) {
+            (ArrayMultiType::FLOAT(array), ArrayMultiType::FLOAT(scale), ArrayMultiType::FLOAT(bias), ArrayMultiType::FLOAT(mean), ArrayMultiType::FLOAT(variance)) => {
+                ArrayMultiType::FLOAT(batch_normalization(array, scale, bias, mean, variance, epsilon, momentum, training_mode))
             },
-            // Puoi aggiungere altri tipi di dati se necessario
-            _ => panic!("Batch normalization does not support this data type combination"),
+            _ => panic!("Batch normalization op does not support this data type")
         }
     }
 
