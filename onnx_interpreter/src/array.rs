@@ -573,6 +573,16 @@ impl ArrayMultiType {
             _ => panic!("Unsqueeze op does not support this data type")
         }
     }
+
+    pub fn max_pool(tensor: &ArrayMultiType, auto_pad: Option<&str>,
+        ceil_mode: Option<bool>, dilations:  Option<Vec<i64>>,
+        kernel_shape: Vec<i64>, pads: Option<Vec<i64>>,
+        storage_order: Option<bool>, strides: Option<Vec<i64>>) -> ArrayMultiType {
+        match tensor {
+            ArrayMultiType::FLOAT(tensor) => ArrayMultiType::FLOAT(max_pool(tensor, auto_pad, ceil_mode, dilations, kernel_shape, pads, storage_order, strides).unwrap()),
+            _ => panic!("Max pool op does not support this data type")
+        }
+    }
     
 
 }

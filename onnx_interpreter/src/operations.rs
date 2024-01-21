@@ -14,7 +14,8 @@ use ndarray_parallel::prelude::*;
 
 // use crate::AutoPad::*;
 enum AutoPad {NotSet, SameUpper, SameLower, Valid}
-enum Error {AutoPadError, KernelShapeError, DilationError, PadsError, StridesError}
+#[derive(Debug)]
+pub enum Error {AutoPadError, KernelShapeError, DilationError, PadsError, StridesError}
 
 // Funzione per stampare una lista di tensori
 pub fn print_tensors(tensors: Vec<Array2<f32>>) {
@@ -943,7 +944,7 @@ where
      */
 }
 
-pub fn convolution<T>(
+pub fn convolution_old<T>(
     input: &Array<T, IxDyn>,
     weights: &Array<T, IxDyn>,
     bias: Option<&Array<T, IxDyn>>,
@@ -1033,9 +1034,9 @@ pub fn max_from_slice<T: PartialOrd + Copy> (slice: &ArrayViewD<T>) -> T {
 }
 
 pub fn max_pool<T: Sync + Send + Float> (tensor: &Array<T, IxDyn>, auto_pad: Option<&str>,
-                                         ceil_mode: Option<bool>, dilations: Option<Vec<isize>>,
-                                         mut kernel_shape: Vec<isize>, pads: Option<Vec<isize>>,
-                                         storage_order: Option<bool>, strides: Option<Vec<isize>>) -> Result<Array<T, IxDyn>, Error> {
+                                         ceil_mode: Option<bool>, dilations: Option<Vec<i64>>,
+                                         kernel_shape: Vec<i64>, pads: Option<Vec<i64>>,
+                                         storage_order: Option<bool>, strides: Option<Vec<i64>>) -> Result<Array<T, IxDyn>, Error> {
     //todo: auto_pad, ceil_mode, storage_order
 
     if kernel_shape.len() != tensor.ndim() { return Err(Error::KernelShapeError) }
@@ -1078,7 +1079,7 @@ pub fn max_pool<T: Sync + Send + Float> (tensor: &Array<T, IxDyn>, auto_pad: Opt
     let mut padded_tensor = ArrayD::<T>::zeros(IxDyn(&padded_tensor_shape));
     //Copy the input tensor in padded_tensor
     let paste_slice_info = pads_begin.iter().zip(tensor.shape())
-        .map(|(&a, &b)| SliceInfoElem::Slice{start: a, step: 1, end: Some(a + b as isize)})
+        .map(|(&a, &b)| SliceInfoElem::Slice{start: a as isize, step: 1, end: Some(a as isize + b as isize)})
         .collect::<Vec<_>>();
     let mut paste_slice =
         padded_tensor.slice_mut::<SliceInfo<Vec<SliceInfoElem>, IxDyn, IxDyn>>(SliceInfo::try_from(paste_slice_info).unwrap());
@@ -1087,7 +1088,7 @@ pub fn max_pool<T: Sync + Send + Float> (tensor: &Array<T, IxDyn>, auto_pad: Opt
     //slice_shape[i] = tensor_shape[i] - dilation[i] * (kernel_shape[i] - 1)
     let slice_shape = padded_tensor.shape().iter()
         .zip(&kernel_shape).zip(&dilations)
-        .map(|((&a, &b), &c)| a as isize - c*(b-1))
+        .map(|((&a, &b), &c)| a as isize - c as isize *(b as isize -1))
         .collect::<Vec<_>>();
     let slice_info = slice_shape.iter()
         .map(|&i| SliceInfoElem::Slice{start: 0, step: 1, end: Some(i)})
@@ -1104,7 +1105,7 @@ pub fn max_pool<T: Sync + Send + Float> (tensor: &Array<T, IxDyn>, auto_pad: Opt
                 d.as_array_view().iter()
                     .zip(&kernel_shape).zip(&dilations)
                     .map(|((&i, &j), &d)|
-                        SliceInfoElem::Slice{start: i as isize, step: d, end: Some(i as isize + d*(j-1) + 1)})
+                        SliceInfoElem::Slice{start: i as isize, step: d as isize, end: Some(i as isize + d as isize*(j as isize-1) + 1)})
                     .collect::<Vec<_>>()
             ).map(|info| padded_tensor.slice::<SliceInfo<Vec<SliceInfoElem>, IxDyn, IxDyn>>(SliceInfo::try_from(info).unwrap()))
             .collect::<Vec< ArrayViewD<T>>>();
@@ -1234,6 +1235,67 @@ where
     input.to_owned().into_shape((new_dim0, new_dim1)).unwrap().into_dyn()
 }
 
+pub fn convolution<T: Clone + Copy + Zero + Mul<Output = T>>(
+    input: &Array<T, IxDyn>,
+    weights: &Array<T, IxDyn>,
+    bias: Option<&Array<T, IxDyn>>,
+    auto_pad: Option<&str>,
+    dilations: &[i64],
+    group: i64,
+    kernel_shape: &[i64],
+    pads: Option<&[i64]>,
+    strides: &[i64],
+) -> ArrayD<T> {
+    if auto_pad != Some("NOTSET") {
+        panic!("Auto padding not supported yet");
+    }
+    if dilations != &[1, 1] {
+        panic!("Dilation not supported yet");
+    }
+
+    if input.ndim() != 4 {
+        panic!("Input tensor must have 4 dimensions (N x C x H x W)");
+    }
+
+    let pads = pads.unwrap_or(&[0, 0, 0, 0]);
+
+    let out_dim = input.shape()[2..].iter()
+        .enumerate()
+        .map(|(i, &d) | (d - kernel_shape[i] as usize + pads[i] as usize + pads[i + input.ndim() - 2] as usize) / strides[i] as usize + 1)
+        .collect::<Vec<_>>();
+    let mut output = Array::<T, IxDyn>::zeros(IxDyn(&[input.shape()[0], weights.shape()[0], out_dim[0], out_dim[1]]));
+
+    for n in 0..input.shape()[0] {
+        for g in 0..group {
+            for m in 0..weights.shape()[0] {
+                for y in 0..out_dim[0] {
+                    for x in 0..out_dim[1] {
+                        let mut sum = T::zero();
+                        for c in 0..(input.shape()[1] / group as usize) {
+                            for ky in 0..kernel_shape[0] {
+                                for kx in 0..kernel_shape[1] {
+                                    let in_y = y as i64 * strides[0] + ky - pads[0];
+                                    let in_x = x as i64 * strides[1] + kx - pads[1];
+                                    if in_y >= 0 && in_y < input.shape()[2] as i64 && in_x >= 0 && in_x < input.shape()[3] as i64 {
+                                        let input_idx = [n, g as usize * input.shape()[1] / group as usize + c, in_y as usize, in_x as usize];
+                                        let weight_idx = [m as usize, c, ky as usize, kx as usize];
+                                        sum = sum + input[input_idx] * weights[weight_idx];
+                                    }
+                                }
+                            }
+                        }
+                        if let Some(b) = bias {
+                            sum = sum + b[[m as usize]];
+                        }
+                        output[[n, m as usize, y, x]] = sum;
+                    }
+                }
+            }
+        }
+    }
+
+    output
+}
 
 pub fn execute_onnx(
     node: &NodeProto,

@@ -150,6 +150,38 @@ pub fn execute_node(node: &NodeProto, inputs:  &HashMap<String, ArrayMultiType>)
             };
             outputs.insert(node.output[0].clone(), ArrayMultiType::batch_normalization(input_tensors[0], input_tensors[1], input_tensors[2], input_tensors[3], input_tensors[4], epsilon, momentum, training_mode))
         },
+        "MaxPool" => {
+            let default_auto_pad = "NOTSET".to_string();
+            let auto_pad = match attributes.get("auto_pad") {
+                Some(Attribute::String(auto_pad)) => auto_pad,
+                _ => &default_auto_pad
+            };
+            let ceil_mode = match attributes.get("ceil_mode") {
+                Some(Attribute::Int(ceil_mode)) => *ceil_mode != 0,
+                _ => false
+            };
+            let kernel_shape = match attributes.get("kernel_shape") {
+                Some(Attribute::Ints(kernel_shape)) => kernel_shape,
+                _ => return Err("Invalid kernel shape")
+            };
+            let strides = match attributes.get("strides") {
+                Some(Attribute::Ints(strides)) => strides,
+                _ => return Err("Invalid strides")
+            };
+            let dilations = match attributes.get("dilations") {
+                Some(Attribute::Ints(dilations)) => dilations,
+                _ => return Err("Invalid dilations")
+            };
+            let pads = match attributes.get("pads") {
+                Some(Attribute::Ints(pads)) => pads,
+                _ => return Err("Invalid pads")
+            };
+            let storage_order = match attributes.get("storage_order") {
+                Some(Attribute::Int(storage_order)) => *storage_order != 0,
+                _ => false
+            };
+            outputs.insert(node.output[0].clone(), ArrayMultiType::max_pool(input_tensors[0], Some(auto_pad.as_str()), Some(ceil_mode), Some(dilations.clone()), kernel_shape.clone(), Some(pads.clone()), Some(storage_order), Some(strides.clone())))
+        },
         _ => return Err("Operation not supported")        
     };
     // Print node information
@@ -170,7 +202,7 @@ pub fn execute_graph(graph: &GraphProto, inputs: &mut HashMap<String, ArrayMulti
         let shared_inputs_clone = Arc::clone(&shared_inputs);
         threads.push(thread::spawn(move || {
             if verbose {
-                //println!("{:?} - {:?}: Start node", node_clone.name, node_clone.op_type);
+                println!("{:?} - {:?}: Start node", node_clone.name, node_clone.op_type);
             }
             // Aquiring the lock
             let (lock, cvar) = &*shared_inputs_clone;
@@ -187,8 +219,10 @@ pub fn execute_graph(graph: &GraphProto, inputs: &mut HashMap<String, ArrayMulti
             let inputs_clone = inputs.clone();
             drop(inputs);
 
+            let input_shape = node_clone.input.iter().map(|input| inputs_clone.get(input).unwrap().shape()).collect::<Vec<&[usize]>>();
+
             if verbose_clone {
-                println!("{:?} - {:?}: Execute node {:?}", node_clone.name, node_clone.op_type, inputs_clone.clone().values().map(|x| x.shape()).collect::<Vec<&[usize]>>());
+                println!("{:?} - {:?}: Execute node {:?}", node_clone.name, node_clone.op_type, input_shape);
             }
             // Execute the nod
             let node_outputs = execute_node(&node_clone, &inputs_clone).unwrap();
@@ -199,7 +233,7 @@ pub fn execute_graph(graph: &GraphProto, inputs: &mut HashMap<String, ArrayMulti
 
             // Update the inputs and notify the condition variable
             if verbose {
-                println!("{:?} - {:?}: Update inputs: {:?} {:?}", node_clone.name, node_clone.op_type, node_outputs.keys(), node_outputs.values().map(|x| x.shape()).collect::<Vec<&[usize]>>());
+                println!("{:?} - {:?}: Update inputs: {:?} -> {:?}", node_clone.name, node_clone.op_type, node_outputs.keys(), node_outputs.values().map(|x| x.shape()).collect::<Vec<&[usize]>>());
             }
             inputs.extend(node_outputs.clone());
             cvar.notify_all();
