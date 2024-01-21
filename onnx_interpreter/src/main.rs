@@ -16,22 +16,9 @@ fn main() {
 
     let mut inputs = get_inputs(&graph).unwrap();
 
-    // for (name, input) in inputs.iter() {
-    //     println!("Input: {:?}, shape: {:?}", name, input.shape());
-    // }
-
-    // for node in graph.node.iter() {
-    //     if node.op_type == "Conv" {
-    //         println!("Conv: {:?}", node.attribute);
-    //     }
-    // }
-
-    let distinc_op = graph.node.iter().map(|node| node.op_type.clone()).collect::<HashSet<String>>();
-    println!("Distinct op: {:?}", distinc_op);
-
     let outputs = execute_graph(&graph, &mut inputs, true).unwrap();
 
     // Print outputs
-    //outputs.iter().for_each(|(name, tensor)| println!("Output: {:?} \n{:?}", name, tensor));
+    outputs.iter().for_each(|(name, tensor)| println!("Output: {:?} \n{:?}", name, tensor));
 
 }
