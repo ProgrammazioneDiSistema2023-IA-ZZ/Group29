@@ -170,7 +170,7 @@ pub fn execute_graph(graph: &GraphProto, inputs: &mut HashMap<String, ArrayMulti
         let shared_inputs_clone = Arc::clone(&shared_inputs);
         threads.push(thread::spawn(move || {
             if verbose {
-                println!("{:?} - {:?}: Start node", node_clone.name, node_clone.op_type);
+                //println!("{:?} - {:?}: Start node", node_clone.name, node_clone.op_type);
             }
             // Aquiring the lock
             let (lock, cvar) = &*shared_inputs_clone;
@@ -188,7 +188,7 @@ pub fn execute_graph(graph: &GraphProto, inputs: &mut HashMap<String, ArrayMulti
             drop(inputs);
 
             if verbose_clone {
-                println!("{:?} - {:?}: Execute node", node_clone.name, node_clone.op_type);
+                println!("{:?} - {:?}: Execute node {:?}", node_clone.name, node_clone.op_type, inputs_clone.clone().values().map(|x| x.shape()).collect::<Vec<&[usize]>>());
             }
             // Execute the nod
             let node_outputs = execute_node(&node_clone, &inputs_clone).unwrap();
@@ -199,9 +199,9 @@ pub fn execute_graph(graph: &GraphProto, inputs: &mut HashMap<String, ArrayMulti
 
             // Update the inputs and notify the condition variable
             if verbose {
-                println!("{:?} - {:?}: Update inputs: {:?}", node_clone.name, node_clone.op_type, node_outputs.keys());
+                println!("{:?} - {:?}: Update inputs: {:?} {:?}", node_clone.name, node_clone.op_type, node_outputs.keys(), node_outputs.values().map(|x| x.shape()).collect::<Vec<&[usize]>>());
             }
-            inputs.extend(node_outputs);
+            inputs.extend(node_outputs.clone());
             cvar.notify_all();
         }));
 
