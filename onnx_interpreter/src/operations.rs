@@ -921,43 +921,22 @@ pub fn convolution<T>(
     kernel_shape: &[i64],
     pads: Option<&[i64]>,
     strides: &[i64],
-) -> Array<T, IxDyn>
+) -> ArrayD<T>
 where
     T: Default + Clone + Add<Output = T> + Mul<Output = T> + Copy + Zero,
 {
     let input_shape = input.dim();
-    println!("Input shape: {:?}", input_shape);
-
-    let input_shape_vec: Vec<i64> = input_shape.slice().iter().map(|&dim| dim as i64).collect();
-    let actual_pads = calculate_padding(&input_shape_vec, kernel_shape, strides, dilations, auto_pad, pads);
-    println!("Actual Pads: {:?}", actual_pads);
-
+    let actual_pads = calculate_padding(&input_shape.slice().iter().map(|&dim| dim as i64).collect::<Vec<i64>>(), kernel_shape, strides, dilations, auto_pad, pads);
     let padded_input = apply_padding(input, &actual_pads);
 
-    // Correct calculation of output dimensions
+    // Calcolo delle dimensioni dell'output
     let output_height = ((input_shape[2] as i64 - kernel_shape[0] + actual_pads[0] + actual_pads[2]) / strides[0] + 1) as usize;
     let output_width = ((input_shape[3] as i64 - kernel_shape[1] + actual_pads[1] + actual_pads[3]) / strides[1] + 1) as usize;
-
-
-    println!("Kernel shape: {:?}", kernel_shape);
-    println!("Strides: {:?}", strides);
-    println!("Dilations: {:?}", dilations);
-
-    println!("Output height: {}", output_height);
-    println!("Output width: {}", output_width);
-
-    // Validate the output dimensions
-    if output_height <= 0 || output_width <= 0 {
-        panic!("Invalid output dimensions computed: height {}, width {}. Check kernel size, padding, strides, and input dimensions.", output_height, output_width);
-    }   
-
-
     let output_channels = weights.dim()[0];
     let output_shape = vec![input_shape[0], output_channels, output_height, output_width];
-
     let mut output = Array::<T, _>::zeros(IxDyn(&output_shape));
 
-
+    // Convoluzione effettiva
     let num_groups = group as usize;
     let input_group_size = input_shape[1] / num_groups;
     let weight_group_size = weights.dim()[1] / num_groups;
@@ -972,31 +951,34 @@ where
 
             for out_y in 0..output_height {
                 for out_x in 0..output_width {
-                    let in_y_start = out_y * strides[0] as usize;
-                    let in_x_start = out_x * strides[1] as usize;
-            
-                    for m in 0..weight_group_size {
+                    // Calcolo degli indici di partenza, tenendo conto del padding
+                    let in_y_start = out_y * strides[0] as usize - actual_pads[0] as usize;
+                    let in_x_start = out_x * strides[1] as usize - actual_pads[1] as usize;
+    
+                    for m in 0..output_channels {
                         let mut sum = T::zero();
+    
                         for c in 0..input_group_size {
                             for ky in 0..kernel_shape[0] as usize {
                                 for kx in 0..kernel_shape[1] as usize {
+                                    // Calcolo degli indici di input e peso
                                     let in_y = in_y_start + ky * dilations[0] as usize;
                                     let in_x = in_x_start + kx * dilations[1] as usize;
-                        
-                                    // Correcting the indices for input and weight tensors
-                                    let input_idx = [n, g * input_group_size + c, in_y, in_x];
-                                    let weight_idx = [m, c, ky, kx]; // Corrected weight index
-                        
-                                    sum = sum + input_group[input_idx] * weight_group[weight_idx];
+    
+                                    if in_y < input_shape[2] && in_x < input_shape[3] {
+                                        let input_idx = [n, g * input_group_size + c, in_y, in_x];
+                                        let weight_idx = [m, c, ky, kx];
+                                        sum = sum + input_group[input_idx] * weight_group[weight_idx];
+                                    }
                                 }
                             }
-                
-                            if let Some(b) = bias {
-                                sum = sum + b[[m + g * weight_group_size]];
-                            }
-                
-                            output[[n, m + g * weight_group_size, out_y, out_x]] = sum;
                         }
+    
+                        if let Some(b) = bias {
+                            sum = sum + b[[m + g * weight_group_size]];
+                        }
+    
+                        output[[n, m + g * weight_group_size, out_y, out_x]] = sum;
                     }
                 }
             }
@@ -1286,20 +1268,43 @@ mod tests {
 
     #[test]
     fn test_convolution_basic() {
-        // Ensure that `input` and `weights` are dynamic-dimension arrays
+        // Assicurati che `input` e `weights` siano array a dimensione dinamica
         let input_data: Vec<f32> = (0..16).map(|x| x as f32).collect();
         let input = Array::from_shape_vec((1, 1, 4, 4), input_data).unwrap().into_dyn();
         let weights = Array::from_shape_vec((1, 1, 3, 3), vec![1.0, 0.0, -1.0, 0.0, 1.0, 0.0, -1.0, 0.0, 1.0]).unwrap().into_dyn();
         let bias = Some(Array::zeros(IxDyn(&[1])).into_dyn());
 
+        // Esegui la funzione di convoluzione
         let result = convolution(&input, &weights, bias.as_ref(), None, &[1, 1], 1, &[3, 3], None, &[1, 1]);
 
-        // Ensure that `expected_output` is a dynamic-dimension array for comparison
-        let expected_output: ArrayD<f32> = Array::from_shape_vec(IxDyn(&[1, 1, 2, 2]), vec![5.0, 3.0, -1.0, -3.0]).unwrap().into_dyn();
+        // Definisci l'output atteso basandosi sull'analisi manuale
+        let expected_output: ArrayD<f32> = Array::from_shape_vec(IxDyn(&[1, 1, 2, 2]), vec![5.0, 6.0, 9.0, 10.0]).unwrap().into_dyn();
 
-// Now this assertion should work without type errors
+        // Verifica che il risultato sia uguale all'output atteso
         assert_eq!(result, expected_output);
     }
     
-    // Other test functions...
+    #[test]
+    fn test_convolution_simple() {
+        // Tensore di input 2x2
+        let input_data = vec![1.0, 2.0, 3.0, 4.0];
+        let input = Array::from_shape_vec((1, 1, 2, 2), input_data).unwrap().into_dyn();
+
+        // Pesi (Kernel) 2x2
+        let weights_data = vec![1.0, 0.0, 0.0, -1.0];
+        let weights = Array::from_shape_vec((1, 1, 2, 2), weights_data).unwrap().into_dyn();
+
+        // Bias
+        let bias = Some(Array::zeros(IxDyn(&[1])).into_dyn());
+
+        // Esecuzione della convoluzione
+        let result = convolution(&input, &weights, bias.as_ref(), None, &[1, 1], 1, &[2, 2], None, &[1, 1]);
+
+        // Output atteso: -3
+        let expected_output = Array::from_shape_vec(IxDyn(&[1, 1, 1, 1]), vec![-3.0]).unwrap().into_dyn();
+
+        // Verifica se l'output corrisponde all'output atteso
+        assert_eq!(result, expected_output, "La convoluzione non produce l'output atteso.");
+    }
 }
+
