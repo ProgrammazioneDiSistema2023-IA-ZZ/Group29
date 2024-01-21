@@ -3,13 +3,12 @@ use std::thread;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc;
 
-use crate::onnx::attribute_proto::AttributeType;
 use crate::onnx::type_proto::Value as ProtoValue;
 use crate::onnx::{ValueInfoProto, GraphProto, TensorProto, AttributeProto, NodeProto};
 use crate::array::ArrayMultiType;
 use crate::attribute::Attribute;
 
-fn init_array(initializer: &TensorProto) -> Result<(String, ArrayMultiType), &'static str> {  
+pub fn init_array(initializer: &TensorProto) -> Result<(String, ArrayMultiType), &'static str> {  
     let array = if initializer.float_data.len() > 0 {
         ArrayMultiType::from_vec_f32(&initializer.float_data, &initializer.dims)?
     } else if initializer.int32_data.len() > 0 {

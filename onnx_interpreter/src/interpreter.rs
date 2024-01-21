@@ -85,11 +85,13 @@ pub fn execute_node(node: &NodeProto, inputs:  &HashMap<String, ArrayMultiType>)
             let indices = &input_tensors[1].to_vec_usize();
             outputs.insert(node.output[0].clone(), ArrayMultiType::gather(input_tensors[0], indices, axis))
         },
-        "BatchNormalization" => {
-            None
-        }
-
-
+        "Constant" => {
+            let value = match attributes.get("value") {
+                Some(Attribute::Tensor(value)) => value,
+                _ => return Err("Invalid value")
+            };
+            outputs.insert(node.output[0].clone(), value.clone())
+        },
         _ => return Err("Operation not supported")        
     };
     // Print node information
