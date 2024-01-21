@@ -976,7 +976,7 @@ where
     // Convoluzione effettiva
     let num_groups = group as usize;
     let input_group_size = input_shape[1] / num_groups;
-    let weight_group_size = weights.dim()[1] / num_groups;
+    let weight_group_size = weights.dim()[1];
 
     for n in 0..input_shape[0] {
         for g in 0..num_groups {

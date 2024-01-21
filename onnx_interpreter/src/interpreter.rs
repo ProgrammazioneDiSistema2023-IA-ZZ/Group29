@@ -150,7 +150,7 @@ pub fn execute_node(node: &NodeProto, inputs:  &HashMap<String, ArrayMultiType>)
             };
             outputs.insert(node.output[0].clone(), ArrayMultiType::batch_normalization(input_tensors[0], input_tensors[1], input_tensors[2], input_tensors[3], input_tensors[4], epsilon, momentum, training_mode))
         },
-        _ => return Err("Operation not supported")        
+        x => {printerrln!("Operation {x} not supported"); return Err("Operation not supported");}
     };
     // Print node information
     // println!("Node: {:?}", node.op_type);
