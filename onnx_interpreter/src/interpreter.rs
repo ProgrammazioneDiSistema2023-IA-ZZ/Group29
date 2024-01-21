@@ -135,6 +135,21 @@ pub fn execute_node(node: &NodeProto, inputs:  &HashMap<String, ArrayMultiType>)
             let axes = input_tensors[1].to_vec_i64();
             outputs.insert(node.output[0].clone(), ArrayMultiType::unsqueeze(input_tensors[0], &axes))
         },
+        "BatchNormalization" => {
+            let epsilon = match attributes.get("epsilon") {
+                Some(Attribute::Float(epsilon)) => *epsilon,
+                _ => 1e-05
+            };
+            let momentum = match attributes.get("momentum") {
+                Some(Attribute::Float(momentum)) => *momentum,
+                _ => 0.9
+            };
+            let training_mode = match attributes.get("training_mode") {
+                Some(Attribute::Int(training_mode)) => *training_mode != 0,
+                _ => false
+            };
+            outputs.insert(node.output[0].clone(), ArrayMultiType::batch_normalization(input_tensors[0], input_tensors[1], input_tensors[2], input_tensors[3], input_tensors[4], epsilon, momentum, training_mode))
+        },
         _ => return Err("Operation not supported")        
     };
     // Print node information

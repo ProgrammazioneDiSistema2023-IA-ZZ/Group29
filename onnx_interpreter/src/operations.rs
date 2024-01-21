@@ -1,5 +1,7 @@
 use crate::onnx::{ModelProto, NodeProto};
+use core::panic;
 use std::collections::HashMap;
+use std::process::Output;
 use ndarray::{Array2, ArrayD, Zip, Array, Array1, ArrayBase, Ix1, IxDyn, Ix2, Dimension, Axis, OwnedRepr, s, Data, DataMut, ScalarOperand, ArrayViewD, SliceInfo, SliceInfoElem, Slice};
 use std::ops::{Add, Sub, Mul};
 use num_traits::float::Float;
@@ -587,23 +589,34 @@ pub fn batch_normalization(
     epsilon: f32,
     momentum: f32,
     training_mode: bool
-) -> (ArrayBase<OwnedRepr<f32>, IxDyn>, Option<ArrayBase<OwnedRepr<f32>, IxDyn>>, Option<ArrayBase<OwnedRepr<f32>, IxDyn>>)
-{
-    let sqrt_var = (&*input_var + epsilon).mapv(|var| var.sqrt());
-    let norm = (x - input_mean) / &sqrt_var;
-    let y = norm * scale + b;
-
+) -> ArrayBase<OwnedRepr<f32>, IxDyn> {
     if training_mode {
-        let current_mean = x.mean_axis(Axis(0)).unwrap();
-        let current_var = x.var_axis(Axis(0), 0.0);
-
-        let updated_mean = input_mean * momentum + &current_mean * (1.0 - momentum);
-        let updated_var = input_var * momentum + &current_var * (1.0 - momentum);
-
-        (y, Some(updated_mean), Some(updated_var))
-    } else {
-        (y, None, None)
+        panic!("Training mode is not supported yet");
     }
+
+    let mut output = ArrayBase::<OwnedRepr<f32>, IxDyn>::zeros(x.shape());
+
+    for dim1 in 0..x.shape()[0] {
+        for dim2 in 0..x.shape()[1] {
+            for dim3 in 0..x.shape()[2] {
+                for dim4 in 0..x.shape()[3] {
+                    let x_value = x[[dim1, dim2, dim3, dim4]];
+                    let scale_value = scale[[dim2]];
+                    let b_value = b[[dim2]];
+                    let input_mean_value = input_mean[[dim2]];
+                    let input_var_value = input_var[[dim2]];
+
+                    let sqrt_var = (input_var_value + epsilon).sqrt();
+                    let norm = (x_value - input_mean_value) / sqrt_var;
+                    let y = norm * scale_value + b_value;
+
+                    output[[dim1, dim2, dim3, dim4]] = y;
+                }
+            }
+        }
+    }
+    
+    output
 }
 
 
