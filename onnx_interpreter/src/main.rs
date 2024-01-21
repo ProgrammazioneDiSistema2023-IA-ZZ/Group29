@@ -8,9 +8,9 @@ use onnx_interpreter::utils::*;
 
 fn main() {
     //Read the model
-    // let path = "models/mobilenetv2-12.onnx";
+    let path = "models/mobilenetv2-12.onnx";
     // let path = "models/shufflenet-v2-12.onnx";
-    let path = "models/linear_regression.onnx";
+    // let path = "models/linear_regression.onnx";
 
 
     let model = file::read::<ModelProto>(path).unwrap();
@@ -22,9 +22,10 @@ fn main() {
         println!("Input: {:?}", inputs.get(&input.name).unwrap());
     }
 
+
     let outputs = execute_graph(&graph, &mut inputs, true).unwrap();
 
     // Print outputs
-    outputs.iter().for_each(|(name, tensor)| println!("Output: {:?} \n{:?}", name, tensor));
+    //outputs.iter().for_each(|(name, tensor)| println!("Output: {:?} \n{:?}", name, tensor));
 
 }

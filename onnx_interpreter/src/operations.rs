@@ -926,11 +926,11 @@ where
     T: Default + Clone + Add<Output = T> + Mul<Output = T> + Copy + Zero,
 {
     let input_shape = input.dim();
-    println!("Input shape: {:?}", input_shape);
+    // println!("Input shape: {:?}", input_shape);
 
     let input_shape_vec: Vec<i64> = input_shape.slice().iter().map(|&dim| dim as i64).collect();
     let actual_pads = calculate_padding(&input_shape_vec, kernel_shape, strides, dilations, auto_pad, pads);
-    println!("Actual Pads: {:?}", actual_pads);
+    // println!("Actual Pads: {:?}", actual_pads);
 
     let padded_input = apply_padding(input, &actual_pads);
 
@@ -939,12 +939,12 @@ where
     let output_width = ((input_shape[3] as i64 - kernel_shape[1] + actual_pads[1] + actual_pads[3]) / strides[1] + 1) as usize;
 
 
-    println!("Kernel shape: {:?}", kernel_shape);
-    println!("Strides: {:?}", strides);
-    println!("Dilations: {:?}", dilations);
+    // println!("Kernel shape: {:?}", kernel_shape);
+    // println!("Strides: {:?}", strides);
+    // println!("Dilations: {:?}", dilations);
 
-    println!("Output height: {}", output_height);
-    println!("Output width: {}", output_width);
+    // println!("Output height: {}", output_height);
+    // println!("Output width: {}", output_width);
 
     // Validate the output dimensions
     if output_height <= 0 || output_width <= 0 {
@@ -1303,3 +1303,4 @@ mod tests {
     
     // Other test functions...
 }
+
