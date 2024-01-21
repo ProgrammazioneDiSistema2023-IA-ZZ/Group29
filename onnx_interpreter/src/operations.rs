@@ -858,11 +858,11 @@ fn calculate_padding(
                     0
                 };
                 if pad == "SAME_UPPER" {
-                    new_pads[i * 2] = total_padding / 2;
-                    new_pads[i * 2 + 1] = total_padding - new_pads[i * 2];
+                    new_pads[i] = total_padding / 2;
+                    new_pads[i + kernel_shape.len()] = total_padding - new_pads[i];
                 } else { // SAME_LOWER
-                    new_pads[i * 2 + 1] = total_padding / 2;
-                    new_pads[i * 2] = total_padding - new_pads[i * 2 + 1];
+                    new_pads[i +kernel_shape.len()] = total_padding / 2;
+                    new_pads[i] = total_padding - new_pads[i + kernel_shape.len()];
                 }
             }
             new_pads
@@ -878,14 +878,32 @@ fn calculate_padding(
 
 
 fn apply_padding<T>(
-    input: &Array<T, IxDyn>, 
+    input: &Array<T, IxDyn>,
     pads: &[i64]
 ) -> Array<T, IxDyn>
 where
     T: Default + Clone,
 {
+    let pads_begin = &pads[0..input.ndim()];
+    let pads_end = &pads[input.ndim()..];
+    let output_shape = pads_begin.iter()
+        .zip(input.shape()).zip(pads_end)
+        .map(|((&a,&b),&c)| a as usize + b + c as usize)
+        .collect::<Vec<_>>();
+    let mut output = ArrayD::<T>::default(IxDyn(&output_shape));
+
+    let paste_slice_info = pads_begin.iter().zip(input.shape())
+        .map(|(&a, &b)| SliceInfoElem::Slice{start: a as isize, step: 1, end: Some(a as isize + b as isize)})
+        .collect::<Vec<_>>();
+    let mut paste_slice =
+        output.slice_mut::<SliceInfo<Vec<SliceInfoElem>, IxDyn, IxDyn>>(SliceInfo::try_from(paste_slice_info).unwrap());
+    paste_slice.iter_mut().zip(input).for_each(|(a, b)| *a = b.clone());
+    output
+
+
+    /*
     let mut padded_shape = input.raw_dim();
-    
+
     for (i, &pad) in pads.iter().enumerate() {
         if i % 2 == 0 {  // Padding di inizio
             padded_shape[i / 2] += pad as usize;
@@ -903,12 +921,13 @@ where
         let height_end = if pads[2] > 0 { -(pads[2] as isize) } else { isize::MAX };
         let width_start = pads[1] as isize;
         let width_end = if pads[3] > 0 { -(pads[3] as isize) } else { isize::MAX };
-    
+
         s![.., .., height_start..height_end, width_start..width_end]
     };
     padded_input.slice_mut(slice_s).assign(input);
 
     padded_input
+     */
 }
 
 pub fn convolution<T>(
