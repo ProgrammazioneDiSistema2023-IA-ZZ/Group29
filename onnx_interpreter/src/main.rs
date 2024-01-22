@@ -23,6 +23,11 @@ fn main() {
 
     let mut inputs = get_inputs(&graph, Some(input_for_mnist())).unwrap();
 
+    for input in graph.input.iter() {
+        let (name, array) = inputs.get_key_value(&input.name).unwrap();
+        println!("Input: {:?} with shape {:?}:\n{:?}\n\n", name, array.shape(), array);
+    }
+
     //Write the inputs info
     for input in graph.input.iter() {
         let (name, array) = inputs.get_key_value(&input.name).unwrap();

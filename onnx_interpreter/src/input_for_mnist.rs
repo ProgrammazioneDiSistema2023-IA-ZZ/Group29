@@ -30,8 +30,8 @@ pub fn input_for_mnist() -> Vec<ArrayMultiType> {
         [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255],
         [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255]];
 
-    let m = m.into_iter().flatten().collect::<Vec<_>>();
-    let v = ArrayMultiType::from_vec_i32(&m, &Vec::from([1 ,1, 28, 28]));
+    let m = m.into_iter().flatten().map(|x| (255 - x) as f32).collect::<Vec<f32>>();
+    let v = ArrayMultiType::from_vec_f32(&m, &Vec::from([1 ,1, 28, 28]));
     if v.is_err() {panic!("Errore nella conversione")}
     let mut i = Vec::with_capacity(1);
     i.push(v.unwrap());
