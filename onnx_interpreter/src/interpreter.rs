@@ -1,6 +1,6 @@
 use std::time::{Instant, Duration};
 use std::collections::HashMap;
-use std::{thread, default};
+use std::thread;
 use std::sync::{Arc, Mutex, Condvar};
 
 use crate::onnx::*;
@@ -172,7 +172,7 @@ pub fn execute_node(node: &NodeProto, inputs:  &HashMap<String, ArrayMultiType>)
             let default_strides = input_tensors[0].shape()[2..].iter().map(|_| 1).collect::<Vec<i64>>();
             let strides = match attributes.get("strides") {
                 Some(Attribute::Ints(strides)) => strides,
-                _ => return Err("Invalid strides")
+                _ => &default_strides
             };
             let default_dilations = input_tensors[0].shape()[2..].iter().map(|_| 1).collect::<Vec<i64>>();
             let dilations = match attributes.get("dilations") {

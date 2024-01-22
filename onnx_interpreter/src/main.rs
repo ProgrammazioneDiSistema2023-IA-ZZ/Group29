@@ -1,9 +1,7 @@
-use std::collections::HashSet;
 use std::fs::File;
 use std::io::Write;
-use std::time::{Instant, Duration};
+use std::time::Instant;
 
-use ndarray::Array;
 use onnx_interpreter::interpreter::execute_graph;
 use onnx_interpreter::onnx::*;
 use onnx_interpreter::file;

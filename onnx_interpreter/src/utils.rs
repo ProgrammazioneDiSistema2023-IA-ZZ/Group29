@@ -5,7 +5,7 @@ use std::sync::mpsc;
 
 
 use crate::onnx::type_proto::Value as ProtoValue;
-use crate::onnx::{ValueInfoProto, GraphProto, TensorProto, AttributeProto, NodeProto};
+use crate::onnx::{ValueInfoProto, GraphProto, TensorProto, NodeProto};
 use crate::array::ArrayMultiType;
 use crate::attribute::Attribute;
 

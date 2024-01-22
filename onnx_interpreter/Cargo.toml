@@ -10,11 +10,9 @@ prost = "0.12.3"
 prost-types = "0.12.3"
 ndarray =  { version = "0.15.6", features = ["rayon"] }
 num-traits = "0.2"
-rayon = "1.8.0"
 onnx = "0.1.0"
 rand = "0.8.5"
 ndarray-rand = "0.14.0"
-ndarray-parallel = "0.9.1"
 ndarray-stats = "0.5.1"
 
 [build-dependencies]

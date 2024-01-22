@@ -4,7 +4,6 @@ use ndarray::{Array, IxDyn};
 use onnx::onnx::TensorProto_DataType;
 use ndarray_rand::RandomExt;
 use rand::distributions::{Uniform, uniform::SampleUniform};
-use rayon::array;
 
 use crate::onnx::{TensorShapeProto, tensor_shape_proto::dimension::Value};
 use crate::operations::*;
