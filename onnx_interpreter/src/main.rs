@@ -18,19 +18,14 @@ fn main() {
 
     let mut inputs = get_inputs(&graph).unwrap();
 
-    for node in graph.node.iter() {
-        if node.op_type == "Gemm" {
-            println!("Gemm: {:?}", node);
-        }
-    }
 
-    // let start = Instant::now();
-    // let outputs = execute_graph(&graph, &mut inputs, true).unwrap();
-    // let duration = start.elapsed();
+    let start = Instant::now();
+    let outputs = execute_graph(&graph, &mut inputs, true).unwrap();
+    let duration = start.elapsed();
 
-    // // Print outputs
-    // println!("Execution time: {:?}", duration);
-    // outputs.iter().for_each(|(name, tensor)| println!("Output: {:?} \n{:?}", name, tensor));
+    // Print outputs
+    println!("Execution time: {:?}", duration);
+    outputs.iter().for_each(|(name, tensor)| println!("Output: {:?} \n{:?}", name, tensor));
 
 }
 
