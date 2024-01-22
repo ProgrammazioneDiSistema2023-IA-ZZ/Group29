@@ -1,4 +1,3 @@
-use std::any::{Any, TypeId};
 use std::fs::File;
 use std::io::Write;
 use std::time::Instant;

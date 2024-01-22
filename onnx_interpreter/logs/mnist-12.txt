@@ -12,54 +12,56 @@ FLOAT([[[[0.0, 0.0, 0.0, 0.0, 0.0, ..., 0.0, 0.0, 0.0, 0.0, 0.0],
    [0.0, 0.0, 0.0, 0.0, 0.0, ..., 0.0, 0.0, 0.0, 0.0, 0.0],
    [0.0, 0.0, 0.0, 0.0, 0.0, ..., 0.0, 0.0, 0.0, 0.0, 0.0]]]], shape=[1, 1, 28, 28], strides=[784, 784, 28, 1], layout=Cc (0x5), dynamic ndim=4)
 
-Node: "Convolution28" execute "Conv" in 281.9852ms:
+Node: "Convolution28" execute "Conv" in 431.7608ms:
 	Input: "Input3" with shape [1, 1, 28, 28] - "Parameter5" with shape [8, 1, 5, 5] - 
 	Output: "Convolution28_Output_0" with shape [1, 8, 28, 28] - 
 
-Node: "Plus30" execute "Add" in 1.3755ms:
+Node: "Plus30" execute "Add" in 1.3402ms:
 	Input: "Convolution28_Output_0" with shape [1, 8, 28, 28] - "Parameter6" with shape [8, 1, 1] - 
 	Output: "Plus30_Output_0" with shape [1, 8, 28, 28] - 
 
-Node: "ReLU32" execute "Relu" in 277.6µs:
+Node: "ReLU32" execute "Relu" in 335.4µs:
 	Input: "Plus30_Output_0" with shape [1, 8, 28, 28] - 
 	Output: "ReLU32_Output_0" with shape [1, 8, 28, 28] - 
 
-Node: "Pooling66" execute "MaxPool" in 12.2195ms:
+Node: "Pooling66" execute "MaxPool" in 16.9906ms:
 	Input: "ReLU32_Output_0" with shape [1, 8, 28, 28] - 
 	Output: "Pooling66_Output_0" with shape [1, 8, 14, 14] - 
 
-Node: "Convolution110" execute "Conv" in 998.4813ms:
+Node: "Convolution110" execute "Conv" in 1.2234376s:
 	Input: "Pooling66_Output_0" with shape [1, 8, 14, 14] - "Parameter87" with shape [16, 8, 5, 5] - 
 	Output: "Convolution110_Output_0" with shape [1, 16, 14, 14] - 
 
-Node: "Plus112" execute "Add" in 639.5µs:
+Node: "Plus112" execute "Add" in 573.9µs:
 	Input: "Convolution110_Output_0" with shape [1, 16, 14, 14] - "Parameter88" with shape [16, 1, 1] - 
 	Output: "Plus112_Output_0" with shape [1, 16, 14, 14] - 
 
-Node: "ReLU114" execute "Relu" in 146.2µs:
+Node: "ReLU114" execute "Relu" in 127.5µs:
 	Input: "Plus112_Output_0" with shape [1, 16, 14, 14] - 
 	Output: "ReLU114_Output_0" with shape [1, 16, 14, 14] - 
 
-Node: "Pooling160" execute "MaxPool" in 12.5418ms:
+Node: "Pooling160" execute "MaxPool" in 5.3442ms:
 	Input: "ReLU114_Output_0" with shape [1, 16, 14, 14] - 
 	Output: "Pooling160_Output_0" with shape [1, 16, 4, 4] - 
 
-Node: "Times212_reshape0" execute "Reshape" in 92.9µs:
+Node: "Times212_reshape0" execute "Reshape" in 59.9µs:
 	Input: "Pooling160_Output_0" with shape [1, 16, 4, 4] - "Pooling160_Output_0_reshape0_shape" with shape [2] - 
 	Output: "Pooling160_Output_0_reshape0" with shape [1, 256] - 
 
-Node: "Times212_reshape1" execute "Reshape" in 398.4µs:
+Node: "Times212_reshape1" execute "Reshape" in 433.1µs:
 	Input: "Parameter193" with shape [16, 4, 4, 10] - "Parameter193_reshape1_shape" with shape [2] - 
 	Output: "Parameter193_reshape1" with shape [256, 10] - 
 
-Node: "Times212" execute "MatMul" in 431.9µs:
+Node: "Times212" execute "MatMul" in 448.9µs:
 	Input: "Pooling160_Output_0_reshape0" with shape [1, 256] - "Parameter193_reshape1" with shape [256, 10] - 
 	Output: "Times212_Output_0" with shape [1, 10] - 
 
-Node: "Plus214" execute "Add" in 79.6µs:
+Node: "Plus214" execute "Add" in 90.9µs:
 	Input: "Times212_Output_0" with shape [1, 10] - "Parameter194" with shape [1, 10] - 
 	Output: "Plus214_Output_0" with shape [1, 10] - 
 
 Output: "Plus214_Output_0" with shape [1, 10]:
 FLOAT([[-2148.3755, 2397.8281, 7040.5083, 793.39453, -1597.1633, -2975.6582, 47.1195, -791.9595, -1632.975, -4049.2415]], shape=[1, 10], strides=[10, 1], layout=CFcf (0xf), dynamic ndim=2)
+
+Predicted number: 2
 
