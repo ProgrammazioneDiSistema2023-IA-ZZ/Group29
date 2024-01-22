@@ -9,8 +9,8 @@ use onnx_interpreter::utils::*;
 
 fn main() {
     //Read the model
-    let model_name = "shufflenet-v2-12";
-    // let model_name = "mnist-12";
+    // let model_name = "shufflenet-v2-12";
+    let model_name = "mnist-12";
 
     let model = file::read::<ModelProto>(&format!("models/{}.onnx", model_name)).unwrap();
     let graph = model.graph.unwrap(); 
