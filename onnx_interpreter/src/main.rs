@@ -18,7 +18,7 @@ fn main() {
     let mut log_file = File::create(&format!("logs/{}.txt", model_name)).unwrap();
     log_file.write(format!("Model: {}\n", model_name).as_bytes()).unwrap();
 
-    let mut inputs = get_inputs(&graph).unwrap();
+    let mut inputs = get_inputs(&graph, None).unwrap();
 
     //Write the inputs info
     for input in graph.input.iter() {

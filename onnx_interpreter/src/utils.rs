@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::thread;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc;
@@ -24,7 +24,11 @@ pub fn init_array(initializer: &TensorProto) -> Result<(String, ArrayMultiType),
     Ok((name, array))
 }
 
-fn random_array(info: &ValueInfoProto) -> Result<(String, ArrayMultiType), &'static str> {
+fn input_array(info: &ValueInfoProto, input: Option<ArrayMultiType>) -> Result<(String, ArrayMultiType), &'static str> {
+    let name = info.name.clone();
+    if input.is_some() {
+        return Ok((name, input.unwrap()));
+    }
     let tensor_info = match &info.r#type {
         Some(proto) => match &proto.value {
             Some(ProtoValue::TensorType(tensor)) => tensor,
@@ -39,21 +43,22 @@ fn random_array(info: &ValueInfoProto) -> Result<(String, ArrayMultiType), &'sta
     };
 
     let array = ArrayMultiType::random(shape, tensor_info.elem_type);
-    let name = info.name.clone();
     Ok((name, array))
 }
 
-pub fn get_inputs(graph: &GraphProto) -> Result<HashMap<String, ArrayMultiType>, String> {
+pub fn get_inputs(graph: &GraphProto, user_inputs: Option<Vec<ArrayMultiType>>) -> Result<HashMap<String, ArrayMultiType>, String> {
     let (tx, rx) = mpsc::channel();
     let shared_inputs = Arc::new(Mutex::new(HashMap::new()));
     let mut threads = Vec::new();
+    let mut user_inputs = VecDeque::from( user_inputs.unwrap_or(Vec::with_capacity(0)) );
 
     for input in graph.input.iter() {
         let input_clone = input.clone();
         let shared_inputs_clone = Arc::clone(&shared_inputs);
         let tx_clone = tx.clone();
+        let user_input = user_inputs.pop_front();
         threads.push(thread::spawn(move || {
-            match random_array(&input_clone) {
+            match input_array(&input_clone, user_input) {
                 Ok((name, array)) => {
                     let mut inputs = shared_inputs_clone.lock().unwrap();
                     inputs.insert(name, array);
