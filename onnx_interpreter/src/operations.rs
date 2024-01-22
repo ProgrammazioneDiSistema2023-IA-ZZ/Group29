@@ -1,14 +1,17 @@
 use crate::onnx::{ModelProto, NodeProto};
 use core::panic;
 use std::collections::HashMap;
+use std::fmt::Display;
+use std::process::Output;
 use ndarray::{Array2, ArrayD, Zip, Array, Array1, ArrayBase, Ix1, IxDyn, Ix2, Dimension, Axis, OwnedRepr, s, Data, DataMut, ScalarOperand, ArrayViewD, SliceInfo, SliceInfoElem, Slice, RawData};
-use std::ops::{Add, Sub, Mul};
+use std::ops::{Add, Div, Mul, Sub};
 use num_traits::float::Float;
 use std::cmp;
 use std::convert::{TryFrom, TryInto};
 use num_traits::{Zero, FromPrimitive, Bounded};
 use std::thread;
 use std::sync::{Arc, Mutex, RwLock};
+
 
 
 // use crate::AutoPad::*;
@@ -683,51 +686,45 @@ where
     result
 }
 
-pub fn reduce_mean<A>(
-    data: &ArrayBase<OwnedRepr<A>, IxDyn>,
+pub fn reduce_mean<T: Clone + Zero + FromPrimitive + Div<Output = T> + Display>(
+    data: &Array<T, IxDyn>,
     axes: Option<Vec<i64>>,
     keepdims: bool,
     noop_with_empty_axes: bool,
-) -> ArrayBase<OwnedRepr<A>, IxDyn>
-where
-    A: Float + FromPrimitive,
-{
-    // Convert axes to usize, handling negative values
-    let data_shape = data.shape();
-    let rank = data_shape.len();
-    let axes: Vec<usize> = match axes {
-        Some(ax) => ax.iter()
-            .map(|&a| if a < 0 { (rank as i64 + a) as usize } else { a as usize })
-            .collect(),
-        None => (0..rank).collect(),
-    };
-
-    // Se gli assi sono vuoti e noop_with_empty_axes è true, ritorna il tensore originale
-    if axes.is_empty() && noop_with_empty_axes {
-        return data.to_owned();
+) -> Array<T, IxDyn> {
+    if axes.is_none() && noop_with_empty_axes {
+        return data.clone();
     }
 
-    // Calcola la media lungo gli assi specificati
-    let mut reduced = data.to_owned();
-    for &axis in &axes {
-        reduced = reduced.mean_axis(Axis(axis))
-            .expect("Failed to compute mean along the axis");
+    let reduce_axes = axes.unwrap_or_else(|| (0..data.ndim() as i64).collect());
+    let positive_axes: Vec<usize> = reduce_axes.iter()
+        .map(|&axis| if axis < 0 { (data.ndim() as i64 + axis) as usize } else { axis as usize })
+        .collect();
 
-        if !keepdims {
-            reduced = reduced.index_axis_move(Axis(axis), 0);
+    println!("positive_axes: {:?}", positive_axes);
+
+    let mut result = data.clone();
+    for (index, &axis) in positive_axes.iter().enumerate() {
+        if axis - index >= result.ndim() {
+            panic!("Invalid axis: {}", axis);
         }
+        result = match result.mean_axis(Axis(axis - index)) {
+            Some(mean) => mean,
+            None => panic!("Failed to calculate mean along axis {}", axis),
+        };
+
+        println!("result: {}", result);
     }
 
-    // Gestisce il mantenimento delle dimensioni ridotte
     if keepdims {
-        let mut shape = data_shape.to_vec();
-        for &axis in &axes {
+        let mut shape = data.shape().to_vec();
+        for &axis in &positive_axes {
             shape[axis] = 1;
         }
-        reduced = reduced.into_shape(shape).unwrap();
+        result = result.into_shape(IxDyn(&shape)).unwrap();
     }
 
-    reduced
+    result
 }
 
 // Funzione HardSwish
@@ -1227,10 +1224,46 @@ pub fn convolution<T: 'static + Clone + Copy + Zero + Mul<Output = T> + Send + S
     if input.ndim() != 4 {
         panic!("Input tensor must have 4 dimensions (N x C x H x W)");
     }
+    let real_pads = match auto_pad {
+        "NOTSET" => pads.to_vec(),
+        "SAME_UPPER" => {
+            let mut new_pads = vec![0; kernel_shape.len() * 2];
+            for i in 0..kernel_shape.len() {
+                let input_size = input.shape()[i + 2] as i64;
+                let filter_size = kernel_shape[i];
+                let output_size = (input_size + strides[i] - 1) / strides[i];
+                let total_padding = if output_size * strides[i] + filter_size > input_size + strides[i] {
+                    output_size * strides[i] + filter_size - input_size - strides[i]
+                } else {
+                    0
+                };
+                new_pads[i] = total_padding / 2;
+                new_pads[i + kernel_shape.len()] = total_padding - new_pads[i];
+            }
+            new_pads
+        }
+        "SAME_LOWER" => {
+            let mut new_pads = vec![0; kernel_shape.len() * 2];
+            for i in 0..kernel_shape.len() {
+                let input_size = input.shape()[i + 2] as i64;
+                let filter_size = kernel_shape[i];
+                let output_size = (input_size + strides[i] - 1) / strides[i];
+                let total_padding = if output_size * strides[i] + filter_size > input_size + strides[i] {
+                    output_size * strides[i] + filter_size - input_size - strides[i]
+                } else {
+                    0
+                };
+                new_pads[i + kernel_shape.len()] = total_padding / 2;
+                new_pads[i] = total_padding - new_pads[i + kernel_shape.len()];
+            }
+            new_pads
+        }
+        _ => panic!("Auto padding not supported yet"),
+    };
 
     let out_dim = input.shape()[2..].iter()
         .enumerate()
-        .map(|(i, &d) | (d - kernel_shape[i] as usize + pads[i] as usize + pads[i + input.ndim() - 2] as usize) / strides[i] as usize + 1)
+        .map(|(i, &d) | (d - kernel_shape[i] as usize + real_pads[i] as usize + real_pads[i + input.ndim() - 2] as usize) / strides[i] as usize + 1)
         .collect::<Vec<_>>();
     let share_output = Arc::new(Mutex::new(Array::<T, IxDyn>::zeros(IxDyn(&[input.shape()[0], weights.shape()[0], out_dim[0], out_dim[1]]))));
     let share_input = Arc::new(RwLock::new(input.clone()));
@@ -1248,7 +1281,7 @@ pub fn convolution<T: 'static + Clone + Copy + Zero + Mul<Output = T> + Send + S
                 };
                 let group_clone = group as usize;
                 let kernel_shape_clone = kernel_shape.to_vec();
-                let pads_clone = pads.to_vec();
+                let real_pads_clone = real_pads.to_vec();
                 let strides_clone = strides.to_vec();
                 let out_dim_clone = out_dim.to_vec();
                 threads.push(thread::spawn(move || {
@@ -1260,8 +1293,8 @@ pub fn convolution<T: 'static + Clone + Copy + Zero + Mul<Output = T> + Send + S
                             for c in 0..input.shape()[1] / group_clone {
                                 for ky in 0..kernel_shape_clone[0] {
                                     for kx in 0..kernel_shape_clone[1] {
-                                        let in_y = y as i64 * strides_clone[0] + ky - pads_clone[0];
-                                        let in_x = x as i64 * strides_clone[1] + kx - pads_clone[1];
+                                        let in_y = y as i64 * strides_clone[0] + ky - real_pads_clone[0];
+                                        let in_x = x as i64 * strides_clone[1] + kx - real_pads_clone[1];
                                         if in_y >= 0 && in_y < input.shape()[2] as i64 && in_x >= 0 && in_x < input.shape()[3] as i64 {
                                             let input_idx = [n, g as usize * input.shape()[1] / group_clone + c, in_y as usize, in_x as usize];
                                             let weight_idx = [m, c, ky as usize, kx as usize];
@@ -1302,6 +1335,7 @@ pub fn max_pool<T: 'static + Clone + Copy + Zero + PartialOrd + Send + Sync>(
     strides: &[i64],
 ) -> Array<T, IxDyn> {
     if auto_pad != "NOTSET" {
+        println!("Auto padding not supported yet {}", auto_pad);
         panic!("Auto padding not supported yet");
     }
     if ceil_mode {
