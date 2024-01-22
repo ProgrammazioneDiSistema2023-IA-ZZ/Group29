@@ -10,8 +10,11 @@ use onnx_interpreter::utils::*;
 fn main() {
     //Read the model
     // let path = "models/mobilenetv2-12.onnx";
-    let path = "models/shufflenet-v2-12.onnx";
+    // let path = "models/shufflenet-v2-12.onnx";
     // let path = "models/linear_regression.onnx";
+    // let path = "models/super-resolution-10.onnx";
+    // let path = "models/efficientnet-lite4-11.onnx";
+    let path = "models/mnist-12.onnx";
 
     let model = file::read::<ModelProto>(path).unwrap();
     let graph = model.graph.unwrap(); 

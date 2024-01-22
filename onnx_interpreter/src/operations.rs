@@ -1214,9 +1214,6 @@ pub fn convolution<T: 'static + Clone + Copy + Zero + Mul<Output = T> + Send + S
     pads: &[i64],
     strides: &[i64],
 ) -> Array<T, IxDyn> {
-    if auto_pad != "NOTSET" {
-        panic!("Auto padding not supported yet");
-    }
     if dilations != &[1, 1] {
         panic!("Dilation not supported yet");
     }
