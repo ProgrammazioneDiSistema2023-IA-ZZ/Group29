@@ -1,5 +1,6 @@
+use std::time::{Instant, Duration};
 use std::collections::HashMap;
-use std::thread;
+use std::{thread, default};
 use std::sync::{Arc, Mutex, Condvar};
 
 use crate::onnx::*;
@@ -29,25 +30,29 @@ pub fn execute_node(node: &NodeProto, inputs:  &HashMap<String, ArrayMultiType>)
             outputs.insert(node.output[0].clone(), ArrayMultiType::concat(input_tensors, axis))
         },
         "Conv" => {
+            let default_kernel_shape = input_tensors[1].shape()[2..].iter().map(|&x| x as i64).collect::<Vec<i64>>();
             let kernel_shape = match attributes.get("kernel_shape") {
                 Some(Attribute::Ints(kernel_shape)) => kernel_shape,
-                _ => return Err("Invalid kernel shape")
+                _ => &default_kernel_shape
             };
+            let default_strides = input_tensors[0].shape()[2..].iter().map(|_| 1).collect::<Vec<i64>>();
             let strides = match attributes.get("strides") {
                 Some(Attribute::Ints(strides)) => strides,
-                _ => return Err("Invalid strides")
+                _ => &default_strides
             };
+            let default_dilations = input_tensors[0].shape()[2..].iter().map(|_| 1).collect::<Vec<i64>>();
             let dilations = match attributes.get("dilations") {
                 Some(Attribute::Ints(dilations)) => dilations,
-                _ => return Err("Invalid dilations")
+                _ => &default_dilations
             };
+            let default_pads = input_tensors[0].shape()[2..].iter().map(|_| [0, 0]).flat_map(|x| x).collect::<Vec<i64>>();
             let pads = match attributes.get("pads") {
                 Some(Attribute::Ints(pads)) => pads,
-                _ => return Err("Invalid pads")
+                _ => &default_pads
             };
             let group = match attributes.get("group") {
                 Some(Attribute::Int(group)) => *group,
-                _ => return Err("Invalid group")
+                _ => 1
             };
             let default_auto_pad = "NOTSET".to_string();
             let auto_pad = match attributes.get("auto_pad") {
@@ -58,7 +63,7 @@ pub fn execute_node(node: &NodeProto, inputs:  &HashMap<String, ArrayMultiType>)
                 3.. => Some(input_tensors[2]),
                 _=> None
             };
-            let output = ArrayMultiType::convolution(input_tensors[0], input_tensors[1], bias, Some(auto_pad.as_str()), &dilations, group, &kernel_shape, Some(pads.as_slice()), &strides);
+            let output = ArrayMultiType::convolution(input_tensors[0], input_tensors[1], bias, auto_pad.as_str(), &dilations, group, &kernel_shape, pads.as_slice(), &strides);
             outputs.insert(node.output[0].clone(), output)
         },
         "Relu" => outputs.insert(node.output[0].clone(), ArrayMultiType::relu(input_tensors[0])),
@@ -164,30 +169,76 @@ pub fn execute_node(node: &NodeProto, inputs:  &HashMap<String, ArrayMultiType>)
                 Some(Attribute::Ints(kernel_shape)) => kernel_shape,
                 _ => return Err("Invalid kernel shape")
             };
+            let default_strides = input_tensors[0].shape()[2..].iter().map(|_| 1).collect::<Vec<i64>>();
             let strides = match attributes.get("strides") {
                 Some(Attribute::Ints(strides)) => strides,
                 _ => return Err("Invalid strides")
             };
+            let default_dilations = input_tensors[0].shape()[2..].iter().map(|_| 1).collect::<Vec<i64>>();
             let dilations = match attributes.get("dilations") {
                 Some(Attribute::Ints(dilations)) => dilations,
-                _ => return Err("Invalid dilations")
+                _ => &default_dilations
             };
+            let default_pads = input_tensors[0].shape()[2..].iter().map(|_| [0, 0]).flat_map(|x| x).collect::<Vec<i64>>();
             let pads = match attributes.get("pads") {
                 Some(Attribute::Ints(pads)) => pads,
-                _ => return Err("Invalid pads")
+                _ => &default_pads
             };
             let storage_order = match attributes.get("storage_order") {
                 Some(Attribute::Int(storage_order)) => *storage_order != 0,
                 _ => false
             };
-            outputs.insert(node.output[0].clone(), ArrayMultiType::max_pool(input_tensors[0], Some(auto_pad.as_str()), Some(ceil_mode), Some(dilations.clone()), kernel_shape.clone(), Some(pads.clone()), Some(storage_order), Some(strides.clone())))
+            outputs.insert(node.output[0].clone(), ArrayMultiType::max_pool(input_tensors[0], auto_pad.as_str(), ceil_mode, dilations.as_slice(), kernel_shape.as_slice(), pads.as_slice(), storage_order, strides.as_slice()))
+        },
+        "Split" => {
+            let axis = match attributes.get("axis") {
+                Some(Attribute::Int(axis)) => *axis as usize,
+                _ => 0
+            };
+            let split = match input_tensors.len() {
+                2.. => input_tensors[1].to_vec_usize(),
+                _ => match attributes.get("split") {
+                    Some(Attribute::Ints(split)) => split.iter().map(|x| *x as usize).collect::<Vec<usize>>(),
+                    _ => match attributes.get("num_outputs") {
+                        Some(Attribute::Int(num_outputs)) => (0..*num_outputs as usize).map(|n| {
+                                let split = input_tensors[0].shape()[axis] / *num_outputs as usize;
+                                if n < input_tensors[0].shape()[axis] % *num_outputs as usize {
+                                    split + 1
+                                } else {
+                                    split
+                                }
+                            }).collect::<Vec<usize>>(),
+                        _ => return Err("Invalid num_outputs")
+                    }
+                }
+            };
+            
+            let output_vec = ArrayMultiType::split(input_tensors[0], split, axis);
+            for (index, output) in output_vec.into_iter().enumerate() {
+                outputs.insert(node.output[index].clone(), output);
+            }
+            None
+        },
+        "ReduceMean" => {
+            let keepdims = match attributes.get("keepdims") {
+                Some(Attribute::Int(keepdims)) => *keepdims != 0,
+                _ => true
+            };
+            let noop_with_empty_axes = match attributes.get("noop_with_empty_axes") {
+                Some(Attribute::Int(noop_with_empty_axes)) => *noop_with_empty_axes != 0,
+                _ => false
+            };
+            let axes = match input_tensors.len() {
+                2.. => Some(input_tensors[1].to_vec_i64()),
+                _ => match attributes.get("axes") {
+                    Some(Attribute::Ints(axes)) => Some(axes.iter().map(|x| *x as i64).collect::<Vec<i64>>()),
+                    _ => None
+                }
+            };
+            outputs.insert(node.output[0].clone(), ArrayMultiType::reduce_mean(input_tensors[0], axes, keepdims, noop_with_empty_axes))
         },
         _ => return Err("Operation not supported")        
     };
-    // Print node information
-    // println!("Node: {:?}", node.op_type);
-    // input_tensors.iter().for_each(|tensor| println!("Input: \n{:?}", tensor));
-    // outputs.iter().for_each(|(name, tensor)| println!("Output: {:?} \n{:?}", name, tensor));
 
     Ok(outputs)
 }
@@ -201,15 +252,12 @@ pub fn execute_graph(graph: &GraphProto, inputs: &mut HashMap<String, ArrayMulti
         let verbose_clone = verbose.clone();
         let shared_inputs_clone = Arc::clone(&shared_inputs);
         threads.push(thread::spawn(move || {
-            if verbose {
-                println!("{:?} - {:?}: Start node", node_clone.name, node_clone.op_type);
-            }
             // Aquiring the lock
             let (lock, cvar) = &*shared_inputs_clone;
             let mut inputs = lock.lock().unwrap();
 
             if verbose_clone {
-                println!("{:?} - {:?}: Wait inputs: {:?}", node_clone.name, node_clone.op_type, node_clone.input);
+                println!("{:?} - {:?}: Start and wait inputs: {:?}", node_clone.name, node_clone.op_type, node_clone.input);
             }
             //Check if all inputs are available, if not relese the lock and wait for the condition variable
             while node_clone.input.iter().any(|input| !inputs.contains_key(input)) {
@@ -225,7 +273,12 @@ pub fn execute_graph(graph: &GraphProto, inputs: &mut HashMap<String, ArrayMulti
                 println!("{:?} - {:?}: Execute node {:?}", node_clone.name, node_clone.op_type, input_shape);
             }
             // Execute the nod
+            let start = Instant::now();
             let node_outputs = execute_node(&node_clone, &inputs_clone).unwrap();
+            let duration = start.elapsed();
+            if verbose_clone {
+                println!("{:?} - {:?}: Execution time: {:?}", node_clone.name, node_clone.op_type, duration);
+            }
             
             // Aquiring the lock
             let (lock, cvar) = &*shared_inputs_clone;

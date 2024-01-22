@@ -1,16 +1,15 @@
 use crate::onnx::{ModelProto, NodeProto};
 use core::panic;
 use std::collections::HashMap;
-use std::process::Output;
-use ndarray::{Array2, ArrayD, Zip, Array, Array1, ArrayBase, Ix1, IxDyn, Ix2, Dimension, Axis, OwnedRepr, s, Data, DataMut, ScalarOperand, ArrayViewD, SliceInfo, SliceInfoElem, Slice};
+use ndarray::{Array2, ArrayD, Zip, Array, Array1, ArrayBase, Ix1, IxDyn, Ix2, Dimension, Axis, OwnedRepr, s, Data, DataMut, ScalarOperand, ArrayViewD, SliceInfo, SliceInfoElem, Slice, RawData};
 use std::ops::{Add, Sub, Mul};
 use num_traits::float::Float;
-use std::iter::FromIterator;
 use std::cmp;
 use std::convert::{TryFrom, TryInto};
 use num_traits::{Zero, FromPrimitive, Bounded};
-use rayon::prelude::*;
-use ndarray_parallel::prelude::*;
+use std::thread;
+use std::sync::{Arc, Mutex, RwLock};
+
 
 // use crate::AutoPad::*;
 enum AutoPad {NotSet, SameUpper, SameLower, Valid}
@@ -394,45 +393,18 @@ where
     data.shape()[start_idx..end_idx].iter().map(|&d| d as i64).collect()
 }
 
-pub fn reshape<S>(data: &ArrayBase<S, IxDyn>, new_shape: &[i64]) -> ArrayBase<OwnedRepr<f32>, IxDyn>
-where
-    S: Data<Elem = f32>,
-{
-    let mut new_shape_usize: Vec<usize> = Vec::with_capacity(new_shape.len());
-    let mut negative_one_index: Option<usize> = None;
-    let mut elements_count = 1;
-
-    for (i, &dim) in new_shape.iter().enumerate() {
-        match dim {
-            -1 => {
-                if negative_one_index.is_some() {
-                    panic!("Only one dimension can be -1");
-                }
-                negative_one_index = Some(i);
-                new_shape_usize.push(0); // Placeholder value
-            }
-            0 => {
-                new_shape_usize.push(data.shape()[i]);
-                elements_count *= data.shape()[i];
-            }
-            _ => {
-                let dim_usize = usize::try_from(dim).expect("Negative dimensions are not allowed");
-                new_shape_usize.push(dim_usize);
-                elements_count *= dim_usize;
-            }
+pub fn reshape<T: Clone>(data: &Array<T, IxDyn>, new_shape: &[i64]) -> Array<T, IxDyn> {
+    let shape: Vec<usize> = new_shape.iter().enumerate().map(|(i, &dim)| {
+        if dim == 0 {
+            data.shape()[i]
+        } else if dim == -1 {
+            data.dim().size() / new_shape.iter().filter(|&&x| x != -1).product::<i64>() as usize
+        } else {
+            dim as usize
         }
-    }
+    }).collect();
 
-    if let Some(idx) = negative_one_index {
-        let original_elements_count: usize = data.iter().count();
-        if original_elements_count % elements_count != 0 {
-            panic!("Invalid shape for Reshape");
-        }
-        new_shape_usize[idx] = original_elements_count / elements_count;
-    }
-
-    let reshaped = data.view().into_shape(new_shape_usize).expect("Invalid shape for Reshape").to_owned();
-    reshaped.into_dyn()
+    Array::from_shape_vec(shape, data.iter().cloned().collect()).unwrap()
 }
 
 pub fn expand<S>(input: &ArrayBase<S, IxDyn>, new_shape: &[i64]) -> ArrayBase<OwnedRepr<f32>, IxDyn>
@@ -713,7 +685,7 @@ where
 
 pub fn reduce_mean<A>(
     data: &ArrayBase<OwnedRepr<A>, IxDyn>,
-    axes: Option<&[i64]>,
+    axes: Option<Vec<i64>>,
     keepdims: bool,
     noop_with_empty_axes: bool,
 ) -> ArrayBase<OwnedRepr<A>, IxDyn>
@@ -1033,7 +1005,7 @@ pub fn max_from_slice<T: PartialOrd + Copy> (slice: &ArrayViewD<T>) -> T {
     max
 }
 
-pub fn max_pool<T: Sync + Send + Float> (tensor: &Array<T, IxDyn>, auto_pad: Option<&str>,
+pub fn max_pool_old<T: Sync + Send + Float> (tensor: &Array<T, IxDyn>, auto_pad: Option<&str>,
                                          ceil_mode: Option<bool>, dilations: Option<Vec<i64>>,
                                          kernel_shape: Vec<i64>, pads: Option<Vec<i64>>,
                                          storage_order: Option<bool>, strides: Option<Vec<i64>>) -> Result<Array<T, IxDyn>, Error> {
@@ -1046,7 +1018,7 @@ pub fn max_pool<T: Sync + Send + Float> (tensor: &Array<T, IxDyn>, auto_pad: Opt
     let auto_pad = match auto_pad {
         None => AutoPad::NotSet,
         Some(s) => match s {
-            "NOTESET" => AutoPad::NotSet,
+            "NOTSET" => AutoPad::NotSet,
             "SAME_UPPER" => AutoPad::SameUpper,
             "SAME_LOWER" => AutoPad::SameLower,
             "VALID" => AutoPad::Valid,
@@ -1140,26 +1112,21 @@ where
 }
 
 
-pub fn split<A>(tensor: &ArrayBase<OwnedRepr<A>, IxDyn>, indices: Vec<usize>, axis: usize) -> Vec<ArrayBase<OwnedRepr<A>, IxDyn>>
-where
-    A: Clone,
-{
-    let mut sub_tensors = Vec::new();
+pub fn split<T: Clone>(tensor: &Array<T, IxDyn>, indices: Vec<usize>, axis: usize) -> Vec<Array<T, IxDyn>> {
+    if indices.iter().sum::<usize>() != tensor.shape()[axis] {
+        panic!("La somma degli indici di split deve essere uguale alla dimensione dell'asse di split");
+    }
+
+    let mut split_tensors = Vec::new();
     let mut start = 0;
     for &index in &indices {
-        let end = index;
-        let mut view = tensor.view();
-        view.slice_axis_inplace(Axis(axis), (start..end).into());
-        sub_tensors.push(view.to_owned());
+        let end = start + index;
+        let split_tensor = tensor.slice_axis(Axis(axis), (start..end).into()).to_owned();
+        split_tensors.push(split_tensor);
         start = end;
     }
 
-    // Aggiungi l'ultimo segmento
-    let mut last_view = tensor.view();
-    last_view.slice_axis_inplace(Axis(axis), (start..).into());
-    sub_tensors.push(last_view.to_owned());
-
-    sub_tensors
+    split_tensors
 }
 
 pub fn tile<A>(tensor: &ArrayBase<OwnedRepr<A>, IxDyn>, reps: &Vec<usize>) -> ArrayBase<OwnedRepr<A>, IxDyn>
@@ -1239,18 +1206,18 @@ where
     input.to_owned().into_shape((new_dim0, new_dim1)).unwrap().into_dyn()
 }
 
-pub fn convolution<T: Clone + Copy + Zero + Mul<Output = T>>(
+pub fn convolution<T: 'static + Clone + Copy + Zero + Mul<Output = T> + Send + Sync>(
     input: &Array<T, IxDyn>,
     weights: &Array<T, IxDyn>,
     bias: Option<&Array<T, IxDyn>>,
-    auto_pad: Option<&str>,
+    auto_pad: &str,
     dilations: &[i64],
     group: i64,
     kernel_shape: &[i64],
-    pads: Option<&[i64]>,
+    pads: &[i64],
     strides: &[i64],
-) -> ArrayD<T> {
-    if auto_pad != Some("NOTSET") {
+) -> Array<T, IxDyn> {
+    if auto_pad != "NOTSET" {
         panic!("Auto padding not supported yet");
     }
     if dilations != &[1, 1] {
@@ -1261,42 +1228,141 @@ pub fn convolution<T: Clone + Copy + Zero + Mul<Output = T>>(
         panic!("Input tensor must have 4 dimensions (N x C x H x W)");
     }
 
-    let pads = pads.unwrap_or(&[0, 0, 0, 0]);
+    let out_dim = input.shape()[2..].iter()
+        .enumerate()
+        .map(|(i, &d) | (d - kernel_shape[i] as usize + pads[i] as usize + pads[i + input.ndim() - 2] as usize) / strides[i] as usize + 1)
+        .collect::<Vec<_>>();
+    let share_output = Arc::new(Mutex::new(Array::<T, IxDyn>::zeros(IxDyn(&[input.shape()[0], weights.shape()[0], out_dim[0], out_dim[1]]))));
+    let share_input = Arc::new(RwLock::new(input.clone()));
+    let mut threads = Vec::new();
+
+    for n in 0..input.shape()[0] {
+        for g in 0..group {
+            for m in 0..weights.shape()[0] {
+                let share_output_clone = Arc::clone(&share_output);
+                let share_input_clone = Arc::clone(&share_input);
+                let weights_clone = weights.clone();
+                let bias_clone = match bias {
+                    Some(b) => Some(b.clone()),
+                    None => None,
+                };
+                let group_clone = group as usize;
+                let kernel_shape_clone = kernel_shape.to_vec();
+                let pads_clone = pads.to_vec();
+                let strides_clone = strides.to_vec();
+                let out_dim_clone = out_dim.to_vec();
+                threads.push(thread::spawn(move || {
+                    let input = share_input_clone.read().unwrap();
+                    let mut output = share_output_clone.lock().unwrap();
+                    for y in 0..out_dim_clone[0] {
+                        for x in 0..out_dim_clone[1] {
+                            let mut sum = T::zero();
+                            for c in 0..input.shape()[1] / group_clone {
+                                for ky in 0..kernel_shape_clone[0] {
+                                    for kx in 0..kernel_shape_clone[1] {
+                                        let in_y = y as i64 * strides_clone[0] + ky - pads_clone[0];
+                                        let in_x = x as i64 * strides_clone[1] + kx - pads_clone[1];
+                                        if in_y >= 0 && in_y < input.shape()[2] as i64 && in_x >= 0 && in_x < input.shape()[3] as i64 {
+                                            let input_idx = [n, g as usize * input.shape()[1] / group_clone + c, in_y as usize, in_x as usize];
+                                            let weight_idx = [m, c, ky as usize, kx as usize];
+                                            sum = sum + input[input_idx] * weights_clone[weight_idx];
+                                        }
+                                    }
+                                }
+                            }
+                            if let Some(b) = &bias_clone {
+                                sum = sum + b[m];
+                            }
+                            output[[n, m, y, x]] = sum;
+                        }
+                    }
+                }));
+
+            }
+        }
+    }
+
+    for thread in threads {
+        thread.join().unwrap();
+    }
+
+    let output = share_output.lock().unwrap().clone();
+
+    output
+}
+
+pub fn max_pool<T: 'static + Clone + Copy + Zero + PartialOrd + Send + Sync>(
+    input: &Array<T, IxDyn>,
+    auto_pad: &str,
+    ceil_mode: bool,
+    dilations: &[i64],
+    kernel_shape: &[i64],
+    pads: &[i64],
+    storage_order: bool,
+    strides: &[i64],
+) -> Array<T, IxDyn> {
+    if auto_pad != "NOTSET" {
+        panic!("Auto padding not supported yet");
+    }
+    if ceil_mode {
+        panic!("Ceil mode not supported yet");
+    }
+    if dilations != &[1, 1] {
+        panic!("Dilation not supported yet");
+    }
+    if storage_order {
+        panic!("Storage order not supported yet");
+    }
+    if input.ndim() != 4 {
+        panic!("Input tensor must have 4 dimensions (N x C x H x W)");
+    }
 
     let out_dim = input.shape()[2..].iter()
         .enumerate()
         .map(|(i, &d) | (d - kernel_shape[i] as usize + pads[i] as usize + pads[i + input.ndim() - 2] as usize) / strides[i] as usize + 1)
         .collect::<Vec<_>>();
-    let mut output = Array::<T, IxDyn>::zeros(IxDyn(&[input.shape()[0], weights.shape()[0], out_dim[0], out_dim[1]]));
+    let share_output = Arc::new(Mutex::new(Array::<T, IxDyn>::zeros(IxDyn(&[input.shape()[0], input.shape()[1], out_dim[0], out_dim[1]]))));
+    let share_input = Arc::new(RwLock::new(input.clone()));
+    let mut threads = Vec::new();
 
     for n in 0..input.shape()[0] {
-        for g in 0..group {
-            for m in 0..weights.shape()[0] {
-                for y in 0..out_dim[0] {
-                    for x in 0..out_dim[1] {
-                        let mut sum = T::zero();
-                        for c in 0..(input.shape()[1] / group as usize) {
-                            for ky in 0..kernel_shape[0] {
-                                for kx in 0..kernel_shape[1] {
-                                    let in_y = y as i64 * strides[0] + ky - pads[0];
-                                    let in_x = x as i64 * strides[1] + kx - pads[1];
-                                    if in_y >= 0 && in_y < input.shape()[2] as i64 && in_x >= 0 && in_x < input.shape()[3] as i64 {
-                                        let input_idx = [n, g as usize * input.shape()[1] / group as usize + c, in_y as usize, in_x as usize];
-                                        let weight_idx = [m as usize, c, ky as usize, kx as usize];
-                                        sum = sum + input[input_idx] * weights[weight_idx];
+        for c in 0..input.shape()[1] {
+            let share_output_clone = Arc::clone(&share_output);
+            let share_input_clone = Arc::clone(&share_input);
+            let kernel_shape_clone = kernel_shape.to_vec();
+            let pads_clone = pads.to_vec();
+            let strides_clone = strides.to_vec();
+            let out_dim_clone = out_dim.to_vec();
+            threads.push(thread::spawn(move || {
+                let input = share_input_clone.read().unwrap();
+                let mut output = share_output_clone.lock().unwrap();
+                for y in 0..out_dim_clone[0] {
+                    for x in 0..out_dim_clone[1] {
+                        let mut max = T::zero();
+                        for ky in 0..kernel_shape_clone[0] {
+                            for kx in 0..kernel_shape_clone[1] {
+                                let in_y = y as i64 * strides_clone[0] + ky - pads_clone[0];
+                                let in_x = x as i64 * strides_clone[1] + kx - pads_clone[1];
+                                if in_y >= 0 && in_y < input.shape()[2] as i64 && in_x >= 0 && in_x < input.shape()[3] as i64 {
+                                    let input_idx = [n, c, in_y as usize, in_x as usize];
+                                    if input[input_idx] > max {
+                                        max = input[input_idx];
                                     }
                                 }
                             }
                         }
-                        if let Some(b) = bias {
-                            sum = sum + b[[m as usize]];
-                        }
-                        output[[n, m as usize, y, x]] = sum;
+                        output[[n, c, y, x]] = max;
                     }
                 }
-            }
+            }));
         }
     }
+
+    for thread in threads {
+        thread.join().unwrap();
+    }
+
+    let output = share_output.lock().unwrap().clone();
 
     output
 }
@@ -1381,7 +1447,7 @@ mod tests {
         let bias = Some(Array::zeros(IxDyn(&[1])).into_dyn());
 
         // Esegui la funzione di convoluzione
-        let result = convolution(&input, &weights, bias.as_ref(), None, &[1, 1], 1, &[3, 3], None, &[1, 1]);
+        let result = convolution_old(&input, &weights, bias.as_ref(), None, &[1, 1], 1, &[3, 3], None, &[1, 1]);
 
         // Definisci l'output atteso basandosi sull'analisi manuale
         let expected_output: ArrayD<f32> = Array::from_shape_vec(IxDyn(&[1, 1, 2, 2]), vec![5.0, 6.0, 9.0, 10.0]).unwrap().into_dyn();
@@ -1404,7 +1470,7 @@ mod tests {
         let bias = Some(Array::zeros(IxDyn(&[1])).into_dyn());
 
         // Esecuzione della convoluzione
-        let result = convolution(&input, &weights, bias.as_ref(), None, &[1, 1], 1, &[2, 2], None, &[1, 1]);
+        let result = convolution_old(&input, &weights, bias.as_ref(), None, &[1, 1], 1, &[2, 2], None, &[1, 1]);
 
         // Output atteso: -3
         let expected_output = Array::from_shape_vec(IxDyn(&[1, 1, 1, 1]), vec![-3.0]).unwrap().into_dyn();

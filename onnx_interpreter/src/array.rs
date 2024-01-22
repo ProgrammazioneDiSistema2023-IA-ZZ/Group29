@@ -166,27 +166,27 @@ impl ArrayMultiType {
 
     pub fn to_vec_usize(&self) -> Vec<usize> {
         match self {
-            ArrayMultiType::FLOAT(a) => a.shape().to_vec().iter().map(|&x| x as usize).collect::<Vec<usize>>(),
-            ArrayMultiType::UINT8(a) => a.shape().to_vec().iter().map(|&x| x as usize).collect::<Vec<usize>>(),
-            ArrayMultiType::INT8(a) => a.shape().to_vec().iter().map(|&x| x as usize).collect::<Vec<usize>>(),
-            ArrayMultiType::UINT16(a) => a.shape().to_vec().iter().map(|&x| x as usize).collect::<Vec<usize>>(),
-            ArrayMultiType::INT16(a) => a.shape().to_vec().iter().map(|&x| x as usize).collect::<Vec<usize>>(),
-            ArrayMultiType::INT32(a) => a.shape().to_vec().iter().map(|&x| x as usize).collect::<Vec<usize>>(),
-            ArrayMultiType::INT64(a) => a.shape().to_vec().iter().map(|&x| x as usize).collect::<Vec<usize>>(),
-            ArrayMultiType::BOOL(a) => a.shape().to_vec().iter().map(|&x| x as usize).collect::<Vec<usize>>()
+            ArrayMultiType::FLOAT(a) => a.iter().map(|&x| x as usize).collect::<Vec<usize>>(),
+            ArrayMultiType::UINT8(a) => a.iter().map(|&x| x as usize).collect::<Vec<usize>>(),
+            ArrayMultiType::INT8(a) => a.iter().map(|&x| x as usize).collect::<Vec<usize>>(),
+            ArrayMultiType::UINT16(a) => a.iter().map(|&x| x as usize).collect::<Vec<usize>>(),
+            ArrayMultiType::INT16(a) => a.iter().map(|&x| x as usize).collect::<Vec<usize>>(),
+            ArrayMultiType::INT32(a) => a.iter().map(|&x| x as usize).collect::<Vec<usize>>(),
+            ArrayMultiType::INT64(a) => a.iter().map(|&x| x as usize).collect::<Vec<usize>>(),
+            ArrayMultiType::BOOL(a) => a.iter().map(|&x| x as usize).collect::<Vec<usize>>()
         }
     }
 
     pub fn to_vec_i64(&self) -> Vec<i64> {
         match self {
-            ArrayMultiType::FLOAT(a) => a.shape().to_vec().iter().map(|&x| x as i64).collect::<Vec<i64>>(),
-            ArrayMultiType::UINT8(a) => a.shape().to_vec().iter().map(|&x| x as i64).collect::<Vec<i64>>(),
-            ArrayMultiType::INT8(a) => a.shape().to_vec().iter().map(|&x| x as i64).collect::<Vec<i64>>(),
-            ArrayMultiType::UINT16(a) => a.shape().to_vec().iter().map(|&x| x as i64).collect::<Vec<i64>>(),
-            ArrayMultiType::INT16(a) => a.shape().to_vec().iter().map(|&x| x as i64).collect::<Vec<i64>>(),
-            ArrayMultiType::INT32(a) => a.shape().to_vec().iter().map(|&x| x as i64).collect::<Vec<i64>>(),
-            ArrayMultiType::INT64(a) => a.shape().to_vec().iter().map(|&x| x as i64).collect::<Vec<i64>>(),
-            ArrayMultiType::BOOL(a) => a.shape().to_vec().iter().map(|&x| x as i64).collect::<Vec<i64>>()
+            ArrayMultiType::FLOAT(a) => a.iter().map(|&x| x as i64).collect::<Vec<i64>>(),
+            ArrayMultiType::UINT8(a) => a.iter().map(|&x| x as i64).collect::<Vec<i64>>(),
+            ArrayMultiType::INT8(a) => a.iter().map(|&x| x as i64).collect::<Vec<i64>>(),
+            ArrayMultiType::UINT16(a) => a.iter().map(|&x| x as i64).collect::<Vec<i64>>(),
+            ArrayMultiType::INT16(a) => a.iter().map(|&x| x as i64).collect::<Vec<i64>>(),
+            ArrayMultiType::INT32(a) => a.iter().map(|&x| x as i64).collect::<Vec<i64>>(),
+            ArrayMultiType::INT64(a) => a.iter().map(|&x| x as i64).collect::<Vec<i64>>(),
+            ArrayMultiType::BOOL(a) => a.iter().map(|&x| x as i64).collect::<Vec<i64>>()
         }
     }
 
@@ -409,11 +409,11 @@ impl ArrayMultiType {
         input: &ArrayMultiType,
         weights: &ArrayMultiType,
         bias: Option<&ArrayMultiType>,
-        auto_pad: Option<&str>,  // Cambiato da &str a Option<&str>
+        auto_pad: &str,  // Cambiato da &str a Option<&str>
         dilations: &[i64],
         group: i64,
         kernel_shape: &[i64],
-        pads: Option<&[i64]>,   // Cambiato da &Vec<i64> a Option<&[i64]>
+        pads: &[i64],   // Cambiato da &Vec<i64> a Option<&[i64]>
         strides: &[i64],
     ) -> ArrayMultiType {
         match (input, weights, bias) {
@@ -574,15 +574,39 @@ impl ArrayMultiType {
         }
     }
 
-    pub fn max_pool(tensor: &ArrayMultiType, auto_pad: Option<&str>,
-        ceil_mode: Option<bool>, dilations:  Option<Vec<i64>>,
-        kernel_shape: Vec<i64>, pads: Option<Vec<i64>>,
-        storage_order: Option<bool>, strides: Option<Vec<i64>>) -> ArrayMultiType {
+    pub fn max_pool(tensor: &ArrayMultiType, auto_pad: &str,
+        ceil_mode: bool, dilations:  &[i64],
+        kernel_shape: &[i64], pads: &[i64],
+        storage_order: bool, strides: &[i64]) -> ArrayMultiType {
         match tensor {
-            ArrayMultiType::FLOAT(tensor) => ArrayMultiType::FLOAT(max_pool(tensor, auto_pad, ceil_mode, dilations, kernel_shape, pads, storage_order, strides).unwrap()),
+            ArrayMultiType::FLOAT(tensor) => ArrayMultiType::FLOAT(max_pool(tensor, auto_pad, ceil_mode, dilations, kernel_shape, pads, storage_order, strides)),
+            ArrayMultiType::UINT8(tensor) => ArrayMultiType::UINT8(max_pool(tensor, auto_pad, ceil_mode, dilations, kernel_shape, pads, storage_order, strides)),
+            ArrayMultiType::INT8(tensor) => ArrayMultiType::INT8(max_pool(tensor, auto_pad, ceil_mode, dilations, kernel_shape, pads, storage_order, strides)),
+            ArrayMultiType::UINT16(tensor) => ArrayMultiType::UINT16(max_pool(tensor, auto_pad, ceil_mode, dilations, kernel_shape, pads, storage_order, strides)),
+            ArrayMultiType::INT16(tensor) => ArrayMultiType::INT16(max_pool(tensor, auto_pad, ceil_mode, dilations, kernel_shape, pads, storage_order, strides)),
+            ArrayMultiType::INT32(tensor) => ArrayMultiType::INT32(max_pool(tensor, auto_pad, ceil_mode, dilations, kernel_shape, pads, storage_order, strides)),
+            ArrayMultiType::INT64(tensor) => ArrayMultiType::INT64(max_pool(tensor, auto_pad, ceil_mode, dilations, kernel_shape, pads, storage_order, strides)),
             _ => panic!("Max pool op does not support this data type")
         }
     }
     
+    pub fn split(tensor: &ArrayMultiType, split_array: Vec<usize>, axis: usize) -> Vec<ArrayMultiType> {
+        match tensor {
+            ArrayMultiType::FLOAT(tensor) => split(tensor, split_array, axis).iter().map(|array| ArrayMultiType::FLOAT(array.clone())).collect::<Vec<ArrayMultiType>>(),
+            ArrayMultiType::UINT8(tensor) => split(tensor, split_array, axis).iter().map(|array| ArrayMultiType::UINT8(array.clone())).collect::<Vec<ArrayMultiType>>(),
+            ArrayMultiType::INT8(tensor) => split(tensor, split_array, axis).iter().map(|array| ArrayMultiType::INT8(array.clone())).collect::<Vec<ArrayMultiType>>(),
+            ArrayMultiType::UINT16(tensor) => split(tensor, split_array, axis).iter().map(|array| ArrayMultiType::UINT16(array.clone())).collect::<Vec<ArrayMultiType>>(),
+            ArrayMultiType::INT16(tensor) => split(tensor, split_array, axis).iter().map(|array| ArrayMultiType::INT16(array.clone())).collect::<Vec<ArrayMultiType>>(),
+            ArrayMultiType::INT32(tensor) => split(tensor, split_array, axis).iter().map(|array| ArrayMultiType::INT32(array.clone())).collect::<Vec<ArrayMultiType>>(),
+            ArrayMultiType::INT64(tensor) => split(tensor, split_array, axis).iter().map(|array| ArrayMultiType::INT64(array.clone())).collect::<Vec<ArrayMultiType>>(),
+            _ => panic!("Split op does not support this data type")
+        }
+    }
 
+    pub fn reduce_mean(tensor: &ArrayMultiType, axes: Option<Vec<i64>>, keepdims: bool, noop_with_empty_axes: bool) -> ArrayMultiType {
+        match tensor {
+            ArrayMultiType::FLOAT(tensor) => ArrayMultiType::FLOAT(reduce_mean(tensor, axes, keepdims, noop_with_empty_axes)),
+            _ => panic!("Reduce mean op does not support this data type")
+        }
+    }
 }
