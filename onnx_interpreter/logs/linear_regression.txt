@@ -1,0 +1,21 @@
+Model: linear_regression
+Input: "X" with shape [1, 1]:
+FLOAT([[0.7644589]], shape=[1, 1], strides=[1, 1], layout=CFcf (0xf), dynamic ndim=2)
+
+Input: "A" with shape [1, 1]:
+FLOAT([[0.122101784]], shape=[1, 1], strides=[1, 1], layout=CFcf (0xf), dynamic ndim=2)
+
+Input: "B" with shape [1, 1]:
+FLOAT([[-0.31312037]], shape=[1, 1], strides=[1, 1], layout=CFcf (0xf), dynamic ndim=2)
+
+Node: "" execute "MatMul" in 390.7µs:
+	Input: "X" with shape [1, 1] - "A" with shape [1, 1] - 
+	Output: "XA" with shape [1, 1] - 
+
+Node: "" execute "Add" in 452.1µs:
+	Input: "XA" with shape [1, 1] - "B" with shape [1, 1] - 
+	Output: "Y" with shape [1, 1] - 
+
+Output: "Y" with shape [1, 1]:
+FLOAT([[-0.21977857]], shape=[1, 1], strides=[1, 1], layout=CFcf (0xf), dynamic ndim=2)
+

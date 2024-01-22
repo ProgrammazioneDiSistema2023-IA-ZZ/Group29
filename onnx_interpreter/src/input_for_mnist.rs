@@ -91,7 +91,7 @@ pub fn input_for_mnist() -> Vec<ArrayMultiType> {
     // m1: 2
     // m2: 6
     // m3: 3
-    let m = m1;
+    let m = m3;
 
     let m = m.into_iter().flatten().map(|x| (255 - x) as f32).collect::<Vec<f32>>();
     let v = ArrayMultiType::from_vec_f32(&m, &Vec::from([1 ,1, 28, 28]));
