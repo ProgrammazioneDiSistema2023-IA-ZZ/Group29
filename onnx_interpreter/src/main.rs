@@ -1,10 +1,13 @@
+use std::any::{Any, TypeId};
 use std::fs::File;
 use std::io::Write;
 use std::time::Instant;
+use onnx_interpreter::array::ArrayMultiType;
 
 use onnx_interpreter::interpreter::execute_graph;
 use onnx_interpreter::onnx::*;
 use onnx_interpreter::file;
+use onnx_interpreter::input_for_mnist::input_for_mnist;
 use onnx_interpreter::utils::*;
 
 fn main() {
@@ -18,7 +21,7 @@ fn main() {
     let mut log_file = File::create(&format!("logs/{}.txt", model_name)).unwrap();
     log_file.write(format!("Model: {}\n", model_name).as_bytes()).unwrap();
 
-    let mut inputs = get_inputs(&graph, None).unwrap();
+    let mut inputs = get_inputs(&graph, Some(input_for_mnist())).unwrap();
 
     //Write the inputs info
     for input in graph.input.iter() {

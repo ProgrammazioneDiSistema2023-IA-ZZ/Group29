@@ -1,38 +1,1085 @@
 Model: shufflenet-v2-12
 Input: "input" with shape [1, 3, 224, 224]:
-FLOAT([[[[0.331326, -0.2638886, 0.76743484, -0.024898767, -0.5627544, ..., 0.1798141, -0.053732157, -0.49349165, -0.12662435, -0.41807103],
-   [-0.742604, -0.4244237, -0.9423282, -0.9545114, -0.72647595, ..., 0.6440003, 0.7124586, 0.56005025, -0.9989598, 0.08770037],
-   [-0.9182117, 0.4954207, 0.5462954, -0.61412954, 0.4863348, ..., -0.06317186, 0.5783975, -0.33227944, 0.8100281, 0.9055126],
-   [0.97860694, 0.08957696, 0.77809024, 0.78525496, 0.4948914, ..., 0.47086382, 0.103462934, 0.6901257, 0.11684847, -0.4136963],
-   [0.8972163, 0.45569515, -0.5716803, -0.64480376, -0.8170204, ..., 0.96986485, 0.8823142, -0.36341977, -0.39779425, -0.22412539],
+FLOAT([[[[0.9248526, 0.73790026, 0.5276437, -0.21895218, -0.16027856, ..., 0.41057062, 0.16453433, -0.30281925, 0.98719263, -0.6835854],
+   [-0.9822254, 0.26110005, 0.33980918, 0.13817906, 0.7794571, ..., 0.8812084, 0.879097, -0.7771573, 0.67908525, 0.55450726],
+   [0.110765934, 0.7866156, 0.8450475, -0.40204835, 0.42413712, ..., 0.6110697, -0.35684466, 0.39273477, 0.75054145, -0.5276499],
+   [0.16504478, 0.3560238, -0.64398885, 0.41572046, 0.7883649, ..., -0.4881208, -0.9140012, -0.7704952, 0.09134269, -0.7241411],
+   [-0.15149593, 0.3216107, -0.6864896, 0.34495282, 0.8709161, ..., 0.22467852, 0.25993252, 0.29545712, -0.45257187, 0.7680764],
    ...,
-   [0.3403647, 0.5817094, 0.5335126, -0.22713256, 0.58811593, ..., -0.74358416, 0.006453991, -0.3025005, -0.032301426, 0.95137525],
-   [-0.36840653, 0.92646456, 0.12449217, -0.3035705, 0.19579148, ..., 0.56548667, 0.91275406, -0.30205178, -0.21964312, -0.5588143],
-   [-0.7960925, -0.09616852, -0.61513424, -0.6204648, -0.122894764, ..., 0.6925745, -0.9115231, 0.5988004, -0.66077757, -0.46143627],
-   [0.31112623, -0.6052699, 0.39424777, -0.18287086, -0.9962828, ..., -0.47416234, 0.78340864, -0.9246855, 0.7806666, -0.26453948],
-   [-0.41290808, 0.3046775, -0.6080916, 0.10540748, -0.22678685, ..., -0.626596, 0.47294164, -0.20216036, -0.92173934, 0.24808455]],
+   [-0.28605723, 0.08389139, 0.04136038, 0.79681134, -0.2767496, ..., -0.821342, 0.6719482, 0.4857607, -0.5357542, 0.09201765],
+   [-0.8182192, 0.4440508, -0.24816012, -0.58164835, -0.006833315, ..., 0.44050598, -0.42227125, 0.095065355, -0.1950295, -0.8742671],
+   [0.39328933, -0.45349884, 0.39278436, 0.41138124, -0.7233467, ..., -0.58942986, -0.27322292, 0.025472403, -0.46216607, -0.9916949],
+   [0.16685295, -0.43018603, 0.7568927, -0.4409535, 0.2777021, ..., -0.36202288, 0.07620764, -0.12725472, 0.6249058, 0.9152241],
+   [0.5948279, 0.69897246, -0.5277779, -0.92622924, -0.9404521, ..., -0.40770316, -0.79395056, -0.26828933, 0.8041582, 0.7998619]],
 
-  [[-0.15558028, -0.76967597, -0.33141375, 0.57585526, -0.22888207, ..., 0.18873668, -0.29834747, -0.52393246, -0.27273273, -0.957232],
-   [-0.6155453, 0.93257236, 0.27722287, 0.3814032, 0.10785246, ..., 0.6902814, 0.22259855, -0.4972942, -0.16684818, -0.8329985],
-   [-0.72235227, -0.69019485, -0.37140036, -0.13093376, 0.6744871, ..., 0.11465621, 0.9544792, 0.9882405, 0.5694804, -0.710834],
-   [-0.535156, -0.24589443, -0.32740498, 0.6911719, -0.7531707, ..., 0.34353566, -0.47104907, -0.13008857, -0.65276957, 0.39384317],
-   [-0.88114524, 0.99387145, -0.2866547, -0.79775405, 0.92042446, ..., -0.231287, 0.8904798, 0.26632094, -0.33469057, 0.2476139],
+  [[-0.35521698, 0.3622303, 0.8603668, -0.4368825, -0.22267008, ..., 0.0101566315, -0.26611304, 0.100952625, 0.16118765, 0.2041812],
+   [0.83829904, -0.059426546, -0.52720356, 0.9312985, -0.21565366, ..., -0.32355118, -0.805593, -0.26992464, 0.2876284, 0.10560036],
+   [-0.071638346, -0.14804769, -0.71871614, -0.85879636, 0.48346758, ..., 0.31093264, -0.20787525, 0.7587445, 0.7916982, 0.3225174],
+   [0.13161898, 0.72612953, 0.5949795, -0.29050374, 0.35600376, ..., 0.53172016, 0.9228606, -0.34669662, 0.9363265, -0.07469392],
+   [0.036649466, 0.7470741, -0.04672122, 0.8607404, 0.78835416, ..., -0.90860033, 0.7752595, -0.56569314, 0.94580364, 0.31250858],
    ...,
-   [-0.03614545, -0.71520376, -0.5153167, 0.3983767, -0.15018177, ..., -0.031974077, 0.46492743, -0.6034279, 0.49776006, -0.48642206],
-   [-0.8305826, -0.43878484, 0.051029205, 0.55216265, 0.77058506, ..., -0.18057871, -0.6177962, 0.64991355, 0.84444904, -0.29080224],
-   [0.048086405, 0.9037862, -0.84364724, -0.084744215, 0.1348052, ..., 0.53565335, -0.03933096, 0.2836311, -0.39343476, -0.7518649],
-   [0.9558959, -0.8424511, -0.35657787, -0.4643197, -0.91038775, ..., 0.2993071, 0.73135924, 0.4981718, -0.8974037, 0.25410676],
-   [0.722023, -0.2536528, 0.7465985, 0.47881055, 0.87000036, ..., 0.22094345, 0.2818718, 0.98992896, 0.6404252, -0.5151715]],
+   [-0.35498905, 0.031704903, 0.7001171, -0.05378771, -0.15926623, ..., 0.91794944, 0.12236452, 0.9237673, -0.082072735, 0.29873133],
+   [-0.57277465, 0.5549934, -0.8247416, 0.5122602, 0.58120656, ..., 0.54136515, -0.9100776, -0.9220257, 0.8554082, -0.1469338],
+   [-0.7139249, 0.92493606, 0.12404847, -0.17949486, 0.41105962, ..., 0.2592101, -0.85244226, -0.8972175, 0.48646426, 0.55249405],
+   [0.37683988, 0.65240693, -0.73857117, 0.23766279, 0.8922217, ..., -0.3458364, -0.68185973, 0.82251954, 0.8086951, -0.60328174],
+   [-0.57946205, -0.035538435, -0.3629048, 0.32090425, 0.5993483, ..., 0.6669135, 0.565377, -0.8360243, -0.0143511295, 0.1026907]],
 
-  [[0.684741, -0.66235757, -0.5420773, 0.45158148, 0.7346251, ..., 0.94781566, -0.38828564, -0.04156065, 0.7662308, -0.84006214],
-   [0.5742235, -0.6178644, 0.9055772, -0.2793424, -0.94975686, ..., -0.24934077, 0.50612044, 0.28210115, -0.13262534, 0.6287987],
-   [0.22563386, -0.012424707, 0.3800509, -0.81498337, -0.47125697, ..., -0.7775061, -0.22540021, 0.7637086, -0.31518102, 0.7737615],
-   [0.4060979, 0.25853372, -0.8060572, 0.2620163, -0.68418, ..., 0.42551374, 0.8179841, -0.016851425, -0.12716055, 0.7374983],
-   [-0.009560823, -0.7653098, -0.96641517, 0.4638157, 0.59519744, ..., 0.27450585, 0.804373, -0.926671, -0.91081214, -0.32358336],
+  [[-0.3521552, 0.79797816, 0.98487234, -0.9460962, 0.22058249, ..., 0.5871892, 0.3729782, 0.3243587, -0.49934483, -0.97352314],
+   [0.23171544, 0.085332155, -0.35406113, -0.22472262, -0.19772601, ..., 0.11201048, 0.39230633, 0.627043, -0.8726535, 0.68178105],
+   [-0.17376971, -0.025768995, 0.86616015, 0.01076746, -0.5689504, ..., -0.22813582, -0.7184322, 0.8573456, 0.31454992, 0.23886418],
+   [-0.8540821, -0.17554665, -0.34266186, 0.36610842, -0.7437012, ..., -0.7899554, -0.5237832, 0.78748584, 0.9182215, 0.9445219],
+   [0.9868338, 0.26804996, 0.73903894, 0.99106765, -0.7539115, ..., 0.20777655, -0.268584, 0.56503725, 0.06452751, -0.29901123],
    ...,
-   [0.28573084, -0.61267066, 0.17862558, -0.39848208, 0.69918895, ..., 0.68756104, 0.05227399, -0.23120093, -0.01668477, 0.80477095],
-   [-0.90715957, 0.021914244, 0.8264487, 0.19127393, 0.4085827, ..., -0.24593925, -0.30527782, -0.16324258, -0.47247267, -0.41992235],
-   [0.95841956, -0.37015176, 0.94887304, 0.26456618, -0.7137244, ..., 0.92775035, -0.98634887, 0.6980891, 0.4926076, 0.08274627],
-   [-0.2835369, 0.2561443, 0.14321494, 0.15868282, 0.8658345, ..., -0.3425982, 0.6782186, -0.31478167, 0.7494731, -0.59613967],
-   [-0.4563508, 0.33489728, -0.5470979, 0.6627617, -0.20106411, ..., -0.86535525, -0.71241236, -0.7857473, 0.74735665, 0.7774465]]]], shape=[1, 3, 224, 224], strides=[150528, 50176, 224, 1], layout=Cc (0x5), dynamic ndim=4)
+   [-0.9269872, -0.4422536, 0.58304214, -0.6473026, -0.9806051, ..., -0.22725272, 0.13061285, -0.21027398, -0.42224455, -0.39599562],
+   [0.25342655, -0.2792852, 0.58413935, -0.15191245, -0.4925356, ..., 0.8167584, 0.6968713, -0.8637986, -0.34141397, -0.956434],
+   [-0.16252708, 0.6689944, 0.927511, 0.3142879, -0.1606803, ..., 0.65256953, 0.32297158, 0.7059221, 0.23583102, 0.91728616],
+   [-0.9818039, -0.55705094, 0.80907845, 0.6203432, -0.68724394, ..., -0.33372164, 0.41192198, 0.8433833, 0.7256007, -0.76491714],
+   [-0.6072295, -0.87481165, 0.5309944, -0.34307933, 0.19212532, ..., -0.4282298, -0.67076683, 0.05747962, 0.14557505, -0.2874868]]]], shape=[1, 3, 224, 224], strides=[150528, 50176, 224, 1], layout=Cc (0x5), dynamic ndim=4)
+
+Node: "Conv_0" execute "Conv" in 13.86095s:
+	Input: "input" with shape [1, 3, 224, 224] - "conv1.0.weight" with shape [24, 3, 3, 3] - 
+	Output: "339" with shape [1, 24, 112, 112] - 
+
+Node: "BatchNormalization_1" execute "BatchNormalization" in 1.0113289s:
+	Input: "339" with shape [1, 24, 112, 112] - "conv1.1.weight" with shape [24] - "conv1.1.bias" with shape [24] - "conv1.1.running_mean" with shape [24] - "conv1.1.running_var" with shape [24] - 
+	Output: "340" with shape [1, 24, 112, 112] - 
+
+Node: "Relu_2" execute "Relu" in 7.6352ms:
+	Input: "340" with shape [1, 24, 112, 112] - 
+	Output: "341" with shape [1, 24, 112, 112] - 
+
+Node: "MaxPool_3" execute "MaxPool" in 1.5673678s:
+	Input: "341" with shape [1, 24, 112, 112] - 
+	Output: "342" with shape [1, 24, 56, 56] - 
+
+Node: "Conv_4" execute "Conv" in 7.6432665s:
+	Input: "342" with shape [1, 24, 56, 56] - "stage2.0.branch1.0.weight" with shape [24, 1, 3, 3] - 
+	Output: "343" with shape [1, 24, 28, 28] - 
+
+Node: "BatchNormalization_5" execute "BatchNormalization" in 59.404ms:
+	Input: "343" with shape [1, 24, 28, 28] - "stage2.0.branch1.1.weight" with shape [24] - "stage2.0.branch1.1.bias" with shape [24] - "stage2.0.branch1.1.running_mean" with shape [24] - "stage2.0.branch1.1.running_var" with shape [24] - 
+	Output: "344" with shape [1, 24, 28, 28] - 
+
+Node: "Conv_6" execute "Conv" in 2.4534842s:
+	Input: "344" with shape [1, 24, 28, 28] - "stage2.0.branch1.2.weight" with shape [58, 24, 1, 1] - 
+	Output: "345" with shape [1, 58, 28, 28] - 
+
+Node: "BatchNormalization_7" execute "BatchNormalization" in 160.4894ms:
+	Input: "345" with shape [1, 58, 28, 28] - "stage2.0.branch1.3.weight" with shape [58] - "stage2.0.branch1.3.bias" with shape [58] - "stage2.0.branch1.3.running_mean" with shape [58] - "stage2.0.branch1.3.running_var" with shape [58] - 
+	Output: "346" with shape [1, 58, 28, 28] - 
+
+Node: "Relu_8" execute "Relu" in 1.4286ms:
+	Input: "346" with shape [1, 58, 28, 28] - 
+	Output: "347" with shape [1, 58, 28, 28] - 
+
+Node: "Conv_9" execute "Conv" in 8.3635562s:
+	Input: "342" with shape [1, 24, 56, 56] - "stage2.0.branch2.0.weight" with shape [58, 24, 1, 1] - 
+	Output: "348" with shape [1, 58, 56, 56] - 
+
+Node: "BatchNormalization_10" execute "BatchNormalization" in 628.0811ms:
+	Input: "348" with shape [1, 58, 56, 56] - "stage2.0.branch2.1.weight" with shape [58] - "stage2.0.branch2.1.bias" with shape [58] - "stage2.0.branch2.1.running_mean" with shape [58] - "stage2.0.branch2.1.running_var" with shape [58] - 
+	Output: "349" with shape [1, 58, 56, 56] - 
+
+Node: "Relu_11" execute "Relu" in 4.2713ms:
+	Input: "349" with shape [1, 58, 56, 56] - 
+	Output: "350" with shape [1, 58, 56, 56] - 
+
+Node: "Conv_12" execute "Conv" in 84.4645119s:
+	Input: "350" with shape [1, 58, 56, 56] - "stage2.0.branch2.3.weight" with shape [58, 1, 3, 3] - 
+	Output: "351" with shape [1, 58, 28, 28] - 
+
+Node: "BatchNormalization_13" execute "BatchNormalization" in 252.8106ms:
+	Input: "351" with shape [1, 58, 28, 28] - "stage2.0.branch2.4.weight" with shape [58] - "stage2.0.branch2.4.bias" with shape [58] - "stage2.0.branch2.4.running_mean" with shape [58] - "stage2.0.branch2.4.running_var" with shape [58] - 
+	Output: "352" with shape [1, 58, 28, 28] - 
+
+Node: "Conv_14" execute "Conv" in 6.7732958s:
+	Input: "352" with shape [1, 58, 28, 28] - "stage2.0.branch2.5.weight" with shape [58, 58, 1, 1] - 
+	Output: "353" with shape [1, 58, 28, 28] - 
+
+Node: "BatchNormalization_15" execute "BatchNormalization" in 204.6083ms:
+	Input: "353" with shape [1, 58, 28, 28] - "stage2.0.branch2.6.weight" with shape [58] - "stage2.0.branch2.6.bias" with shape [58] - "stage2.0.branch2.6.running_mean" with shape [58] - "stage2.0.branch2.6.running_var" with shape [58] - 
+	Output: "354" with shape [1, 58, 28, 28] - 
+
+Node: "Relu_16" execute "Relu" in 1.2665ms:
+	Input: "354" with shape [1, 58, 28, 28] - 
+	Output: "355" with shape [1, 58, 28, 28] - 
+
+Node: "Concat_17" execute "Concat" in 5.0386ms:
+	Input: "347" with shape [1, 58, 28, 28] - "355" with shape [1, 58, 28, 28] - 
+	Output: "356" with shape [1, 116, 28, 28] - 
+
+Node: "Constant_18" execute "Constant" in 4.2589ms:
+	Input: 
+	Output: "357" with shape [5] - 
+
+Node: "Reshape_19" execute "Reshape" in 2.6488ms:
+	Input: "356" with shape [1, 116, 28, 28] - "357" with shape [5] - 
+	Output: "358" with shape [1, 2, 58, 28, 28] - 
+
+Node: "Transpose_20" execute "Transpose" in 850.4µs:
+	Input: "358" with shape [1, 2, 58, 28, 28] - 
+	Output: "359" with shape [1, 58, 2, 28, 28] - 
+
+Node: "Constant_21" execute "Constant" in 451.1µs:
+	Input: 
+	Output: "360" with shape [4] - 
+
+Node: "Reshape_22" execute "Reshape" in 100.3632ms:
+	Input: "359" with shape [1, 58, 2, 28, 28] - "360" with shape [4] - 
+	Output: "361" with shape [1, 116, 28, 28] - 
+
+Node: "Split_23" execute "Split" in 1.7535ms:
+	Input: "361" with shape [1, 116, 28, 28] - 
+	Output: "363" with shape [1, 58, 28, 28] - "362" with shape [1, 58, 28, 28] - 
+
+Node: "Conv_24" execute "Conv" in 6.7016788s:
+	Input: "363" with shape [1, 58, 28, 28] - "stage2.1.branch2.0.weight" with shape [58, 58, 1, 1] - 
+	Output: "364" with shape [1, 58, 28, 28] - 
+
+Node: "BatchNormalization_25" execute "BatchNormalization" in 181.8076ms:
+	Input: "364" with shape [1, 58, 28, 28] - "stage2.1.branch2.1.weight" with shape [58] - "stage2.1.branch2.1.bias" with shape [58] - "stage2.1.branch2.1.running_mean" with shape [58] - "stage2.1.branch2.1.running_var" with shape [58] - 
+	Output: "365" with shape [1, 58, 28, 28] - 
+
+Node: "Relu_26" execute "Relu" in 1.2284ms:
+	Input: "365" with shape [1, 58, 28, 28] - 
+	Output: "366" with shape [1, 58, 28, 28] - 
+
+Node: "Conv_27" execute "Conv" in 82.5892775s:
+	Input: "366" with shape [1, 58, 28, 28] - "stage2.1.branch2.3.weight" with shape [58, 1, 3, 3] - 
+	Output: "367" with shape [1, 58, 28, 28] - 
+
+Node: "BatchNormalization_28" execute "BatchNormalization" in 218.7493ms:
+	Input: "367" with shape [1, 58, 28, 28] - "stage2.1.branch2.4.weight" with shape [58] - "stage2.1.branch2.4.bias" with shape [58] - "stage2.1.branch2.4.running_mean" with shape [58] - "stage2.1.branch2.4.running_var" with shape [58] - 
+	Output: "368" with shape [1, 58, 28, 28] - 
+
+Node: "Conv_29" execute "Conv" in 6.9468327s:
+	Input: "368" with shape [1, 58, 28, 28] - "stage2.1.branch2.5.weight" with shape [58, 58, 1, 1] - 
+	Output: "369" with shape [1, 58, 28, 28] - 
+
+Node: "BatchNormalization_30" execute "BatchNormalization" in 207.0803ms:
+	Input: "369" with shape [1, 58, 28, 28] - "stage2.1.branch2.6.weight" with shape [58] - "stage2.1.branch2.6.bias" with shape [58] - "stage2.1.branch2.6.running_mean" with shape [58] - "stage2.1.branch2.6.running_var" with shape [58] - 
+	Output: "370" with shape [1, 58, 28, 28] - 
+
+Node: "Relu_31" execute "Relu" in 1.4347ms:
+	Input: "370" with shape [1, 58, 28, 28] - 
+	Output: "371" with shape [1, 58, 28, 28] - 
+
+Node: "Concat_32" execute "Concat" in 5.4408ms:
+	Input: "362" with shape [1, 58, 28, 28] - "371" with shape [1, 58, 28, 28] - 
+	Output: "372" with shape [1, 116, 28, 28] - 
+
+Node: "Constant_33" execute "Constant" in 479.9µs:
+	Input: 
+	Output: "373" with shape [5] - 
+
+Node: "Reshape_34" execute "Reshape" in 5.3026ms:
+	Input: "372" with shape [1, 116, 28, 28] - "373" with shape [5] - 
+	Output: "374" with shape [1, 2, 58, 28, 28] - 
+
+Node: "Transpose_35" execute "Transpose" in 1.4813ms:
+	Input: "374" with shape [1, 2, 58, 28, 28] - 
+	Output: "375" with shape [1, 58, 2, 28, 28] - 
+
+Node: "Constant_36" execute "Constant" in 7.6724ms:
+	Input: 
+	Output: "376" with shape [4] - 
+
+Node: "Reshape_37" execute "Reshape" in 95.0584ms:
+	Input: "375" with shape [1, 58, 2, 28, 28] - "376" with shape [4] - 
+	Output: "377" with shape [1, 116, 28, 28] - 
+
+Node: "Split_38" execute "Split" in 1.5837ms:
+	Input: "377" with shape [1, 116, 28, 28] - 
+	Output: "379" with shape [1, 58, 28, 28] - "378" with shape [1, 58, 28, 28] - 
+
+Node: "Conv_39" execute "Conv" in 6.8995377s:
+	Input: "379" with shape [1, 58, 28, 28] - "stage2.2.branch2.0.weight" with shape [58, 58, 1, 1] - 
+	Output: "380" with shape [1, 58, 28, 28] - 
+
+Node: "BatchNormalization_40" execute "BatchNormalization" in 189.2241ms:
+	Input: "380" with shape [1, 58, 28, 28] - "stage2.2.branch2.1.weight" with shape [58] - "stage2.2.branch2.1.bias" with shape [58] - "stage2.2.branch2.1.running_mean" with shape [58] - "stage2.2.branch2.1.running_var" with shape [58] - 
+	Output: "381" with shape [1, 58, 28, 28] - 
+
+Node: "Relu_41" execute "Relu" in 1.1183ms:
+	Input: "381" with shape [1, 58, 28, 28] - 
+	Output: "382" with shape [1, 58, 28, 28] - 
+
+Node: "Conv_42" execute "Conv" in 82.4038788s:
+	Input: "382" with shape [1, 58, 28, 28] - "stage2.2.branch2.3.weight" with shape [58, 1, 3, 3] - 
+	Output: "383" with shape [1, 58, 28, 28] - 
+
+Node: "BatchNormalization_43" execute "BatchNormalization" in 183.2512ms:
+	Input: "383" with shape [1, 58, 28, 28] - "stage2.2.branch2.4.weight" with shape [58] - "stage2.2.branch2.4.bias" with shape [58] - "stage2.2.branch2.4.running_mean" with shape [58] - "stage2.2.branch2.4.running_var" with shape [58] - 
+	Output: "384" with shape [1, 58, 28, 28] - 
+
+Node: "Conv_44" execute "Conv" in 6.8970499s:
+	Input: "384" with shape [1, 58, 28, 28] - "stage2.2.branch2.5.weight" with shape [58, 58, 1, 1] - 
+	Output: "385" with shape [1, 58, 28, 28] - 
+
+Node: "BatchNormalization_45" execute "BatchNormalization" in 210.5253ms:
+	Input: "385" with shape [1, 58, 28, 28] - "stage2.2.branch2.6.weight" with shape [58] - "stage2.2.branch2.6.bias" with shape [58] - "stage2.2.branch2.6.running_mean" with shape [58] - "stage2.2.branch2.6.running_var" with shape [58] - 
+	Output: "386" with shape [1, 58, 28, 28] - 
+
+Node: "Relu_46" execute "Relu" in 1.3932ms:
+	Input: "386" with shape [1, 58, 28, 28] - 
+	Output: "387" with shape [1, 58, 28, 28] - 
+
+Node: "Concat_47" execute "Concat" in 5.3246ms:
+	Input: "378" with shape [1, 58, 28, 28] - "387" with shape [1, 58, 28, 28] - 
+	Output: "388" with shape [1, 116, 28, 28] - 
+
+Node: "Constant_48" execute "Constant" in 509µs:
+	Input: 
+	Output: "389" with shape [5] - 
+
+Node: "Reshape_49" execute "Reshape" in 3.0519ms:
+	Input: "388" with shape [1, 116, 28, 28] - "389" with shape [5] - 
+	Output: "390" with shape [1, 2, 58, 28, 28] - 
+
+Node: "Transpose_50" execute "Transpose" in 1.3597ms:
+	Input: "390" with shape [1, 2, 58, 28, 28] - 
+	Output: "391" with shape [1, 58, 2, 28, 28] - 
+
+Node: "Constant_51" execute "Constant" in 444.6µs:
+	Input: 
+	Output: "392" with shape [4] - 
+
+Node: "Reshape_52" execute "Reshape" in 100.3911ms:
+	Input: "391" with shape [1, 58, 2, 28, 28] - "392" with shape [4] - 
+	Output: "393" with shape [1, 116, 28, 28] - 
+
+Node: "Split_53" execute "Split" in 1.3614ms:
+	Input: "393" with shape [1, 116, 28, 28] - 
+	Output: "394" with shape [1, 58, 28, 28] - "395" with shape [1, 58, 28, 28] - 
+
+Node: "Conv_54" execute "Conv" in 6.9524936s:
+	Input: "395" with shape [1, 58, 28, 28] - "stage2.3.branch2.0.weight" with shape [58, 58, 1, 1] - 
+	Output: "396" with shape [1, 58, 28, 28] - 
+
+Node: "BatchNormalization_55" execute "BatchNormalization" in 231.962ms:
+	Input: "396" with shape [1, 58, 28, 28] - "stage2.3.branch2.1.weight" with shape [58] - "stage2.3.branch2.1.bias" with shape [58] - "stage2.3.branch2.1.running_mean" with shape [58] - "stage2.3.branch2.1.running_var" with shape [58] - 
+	Output: "397" with shape [1, 58, 28, 28] - 
+
+Node: "Relu_56" execute "Relu" in 1.393ms:
+	Input: "397" with shape [1, 58, 28, 28] - 
+	Output: "398" with shape [1, 58, 28, 28] - 
+
+Node: "Conv_57" execute "Conv" in 82.6281661s:
+	Input: "398" with shape [1, 58, 28, 28] - "stage2.3.branch2.3.weight" with shape [58, 1, 3, 3] - 
+	Output: "399" with shape [1, 58, 28, 28] - 
+
+Node: "BatchNormalization_58" execute "BatchNormalization" in 205.2729ms:
+	Input: "399" with shape [1, 58, 28, 28] - "stage2.3.branch2.4.weight" with shape [58] - "stage2.3.branch2.4.bias" with shape [58] - "stage2.3.branch2.4.running_mean" with shape [58] - "stage2.3.branch2.4.running_var" with shape [58] - 
+	Output: "400" with shape [1, 58, 28, 28] - 
+
+Node: "Conv_59" execute "Conv" in 6.8784496s:
+	Input: "400" with shape [1, 58, 28, 28] - "stage2.3.branch2.5.weight" with shape [58, 58, 1, 1] - 
+	Output: "401" with shape [1, 58, 28, 28] - 
+
+Node: "BatchNormalization_60" execute "BatchNormalization" in 216.4208ms:
+	Input: "401" with shape [1, 58, 28, 28] - "stage2.3.branch2.6.weight" with shape [58] - "stage2.3.branch2.6.bias" with shape [58] - "stage2.3.branch2.6.running_mean" with shape [58] - "stage2.3.branch2.6.running_var" with shape [58] - 
+	Output: "402" with shape [1, 58, 28, 28] - 
+
+Node: "Relu_61" execute "Relu" in 1.6567ms:
+	Input: "402" with shape [1, 58, 28, 28] - 
+	Output: "403" with shape [1, 58, 28, 28] - 
+
+Node: "Concat_62" execute "Concat" in 10.1861ms:
+	Input: "394" with shape [1, 58, 28, 28] - "403" with shape [1, 58, 28, 28] - 
+	Output: "404" with shape [1, 116, 28, 28] - 
+
+Node: "Constant_63" execute "Constant" in 569.7µs:
+	Input: 
+	Output: "405" with shape [5] - 
+
+Node: "Reshape_64" execute "Reshape" in 6.2887ms:
+	Input: "404" with shape [1, 116, 28, 28] - "405" with shape [5] - 
+	Output: "406" with shape [1, 2, 58, 28, 28] - 
+
+Node: "Transpose_65" execute "Transpose" in 1.1904ms:
+	Input: "406" with shape [1, 2, 58, 28, 28] - 
+	Output: "407" with shape [1, 58, 2, 28, 28] - 
+
+Node: "Constant_66" execute "Constant" in 445.1µs:
+	Input: 
+	Output: "408" with shape [4] - 
+
+Node: "Reshape_67" execute "Reshape" in 78.6495ms:
+	Input: "407" with shape [1, 58, 2, 28, 28] - "408" with shape [4] - 
+	Output: "409" with shape [1, 116, 28, 28] - 
+
+Node: "Conv_68" execute "Conv" in 71.482697s:
+	Input: "409" with shape [1, 116, 28, 28] - "stage3.0.branch1.0.weight" with shape [116, 1, 3, 3] - 
+	Output: "410" with shape [1, 116, 14, 14] - 
+
+Node: "BatchNormalization_69" execute "BatchNormalization" in 83.0289ms:
+	Input: "410" with shape [1, 116, 14, 14] - "stage3.0.branch1.1.weight" with shape [116] - "stage3.0.branch1.1.bias" with shape [116] - "stage3.0.branch1.1.running_mean" with shape [116] - "stage3.0.branch1.1.running_var" with shape [116] - 
+	Output: "411" with shape [1, 116, 14, 14] - 
+
+Node: "Conv_70" execute "Conv" in 7.6571195s:
+	Input: "411" with shape [1, 116, 14, 14] - "stage3.0.branch1.2.weight" with shape [116, 116, 1, 1] - 
+	Output: "412" with shape [1, 116, 14, 14] - 
+
+Node: "BatchNormalization_71" execute "BatchNormalization" in 122.2869ms:
+	Input: "412" with shape [1, 116, 14, 14] - "stage3.0.branch1.3.weight" with shape [116] - "stage3.0.branch1.3.bias" with shape [116] - "stage3.0.branch1.3.running_mean" with shape [116] - "stage3.0.branch1.3.running_var" with shape [116] - 
+	Output: "413" with shape [1, 116, 14, 14] - 
+
+Node: "Relu_72" execute "Relu" in 565.5µs:
+	Input: "413" with shape [1, 116, 14, 14] - 
+	Output: "414" with shape [1, 116, 14, 14] - 
+
+Node: "Conv_73" execute "Conv" in 19.4635207s:
+	Input: "409" with shape [1, 116, 28, 28] - "stage3.0.branch2.0.weight" with shape [116, 116, 1, 1] - 
+	Output: "415" with shape [1, 116, 28, 28] - 
+
+Node: "BatchNormalization_74" execute "BatchNormalization" in 295.3736ms:
+	Input: "415" with shape [1, 116, 28, 28] - "stage3.0.branch2.1.weight" with shape [116] - "stage3.0.branch2.1.bias" with shape [116] - "stage3.0.branch2.1.running_mean" with shape [116] - "stage3.0.branch2.1.running_var" with shape [116] - 
+	Output: "416" with shape [1, 116, 28, 28] - 
+
+Node: "Relu_75" execute "Relu" in 1.9355ms:
+	Input: "416" with shape [1, 116, 28, 28] - 
+	Output: "417" with shape [1, 116, 28, 28] - 
+
+Node: "Conv_76" execute "Conv" in 88.6113951s:
+	Input: "417" with shape [1, 116, 28, 28] - "stage3.0.branch2.3.weight" with shape [116, 1, 3, 3] - 
+	Output: "418" with shape [1, 116, 14, 14] - 
+
+Node: "BatchNormalization_77" execute "BatchNormalization" in 162.7402ms:
+	Input: "418" with shape [1, 116, 14, 14] - "stage3.0.branch2.4.weight" with shape [116] - "stage3.0.branch2.4.bias" with shape [116] - "stage3.0.branch2.4.running_mean" with shape [116] - "stage3.0.branch2.4.running_var" with shape [116] - 
+	Output: "419" with shape [1, 116, 14, 14] - 
+
+Node: "Conv_78" execute "Conv" in 8.8991167s:
+	Input: "419" with shape [1, 116, 14, 14] - "stage3.0.branch2.5.weight" with shape [116, 116, 1, 1] - 
+	Output: "420" with shape [1, 116, 14, 14] - 
+
+Node: "BatchNormalization_79" execute "BatchNormalization" in 138.1891ms:
+	Input: "420" with shape [1, 116, 14, 14] - "stage3.0.branch2.6.weight" with shape [116] - "stage3.0.branch2.6.bias" with shape [116] - "stage3.0.branch2.6.running_mean" with shape [116] - "stage3.0.branch2.6.running_var" with shape [116] - 
+	Output: "421" with shape [1, 116, 14, 14] - 
+
+Node: "Relu_80" execute "Relu" in 716.6µs:
+	Input: "421" with shape [1, 116, 14, 14] - 
+	Output: "422" with shape [1, 116, 14, 14] - 
+
+Node: "Concat_81" execute "Concat" in 3.744ms:
+	Input: "414" with shape [1, 116, 14, 14] - "422" with shape [1, 116, 14, 14] - 
+	Output: "423" with shape [1, 232, 14, 14] - 
+
+Node: "Constant_82" execute "Constant" in 1.146ms:
+	Input: 
+	Output: "424" with shape [5] - 
+
+Node: "Reshape_83" execute "Reshape" in 1.8009ms:
+	Input: "423" with shape [1, 232, 14, 14] - "424" with shape [5] - 
+	Output: "425" with shape [1, 2, 116, 14, 14] - 
+
+Node: "Transpose_84" execute "Transpose" in 992µs:
+	Input: "425" with shape [1, 2, 116, 14, 14] - 
+	Output: "426" with shape [1, 116, 2, 14, 14] - 
+
+Node: "Constant_85" execute "Constant" in 1.1045ms:
+	Input: 
+	Output: "427" with shape [4] - 
+
+Node: "Reshape_86" execute "Reshape" in 56.0126ms:
+	Input: "426" with shape [1, 116, 2, 14, 14] - "427" with shape [4] - 
+	Output: "428" with shape [1, 232, 14, 14] - 
+
+Node: "Split_87" execute "Split" in 1.3785ms:
+	Input: "428" with shape [1, 232, 14, 14] - 
+	Output: "430" with shape [1, 116, 14, 14] - "429" with shape [1, 116, 14, 14] - 
+
+Node: "Conv_88" execute "Conv" in 7.840842s:
+	Input: "430" with shape [1, 116, 14, 14] - "stage3.1.branch2.0.weight" with shape [116, 116, 1, 1] - 
+	Output: "431" with shape [1, 116, 14, 14] - 
+
+Node: "BatchNormalization_89" execute "BatchNormalization" in 112.8909ms:
+	Input: "431" with shape [1, 116, 14, 14] - "stage3.1.branch2.1.weight" with shape [116] - "stage3.1.branch2.1.bias" with shape [116] - "stage3.1.branch2.1.running_mean" with shape [116] - "stage3.1.branch2.1.running_var" with shape [116] - 
+	Output: "432" with shape [1, 116, 14, 14] - 
+
+Node: "Relu_90" execute "Relu" in 846.7µs:
+	Input: "432" with shape [1, 116, 14, 14] - 
+	Output: "433" with shape [1, 116, 14, 14] - 
+
+Node: "Conv_91" execute "Conv" in 78.1833579s:
+	Input: "433" with shape [1, 116, 14, 14] - "stage3.1.branch2.3.weight" with shape [116, 1, 3, 3] - 
+	Output: "434" with shape [1, 116, 14, 14] - 
+
+Node: "BatchNormalization_92" execute "BatchNormalization" in 101.2463ms:
+	Input: "434" with shape [1, 116, 14, 14] - "stage3.1.branch2.4.weight" with shape [116] - "stage3.1.branch2.4.bias" with shape [116] - "stage3.1.branch2.4.running_mean" with shape [116] - "stage3.1.branch2.4.running_var" with shape [116] - 
+	Output: "435" with shape [1, 116, 14, 14] - 
+
+Node: "Conv_93" execute "Conv" in 8.7233148s:
+	Input: "435" with shape [1, 116, 14, 14] - "stage3.1.branch2.5.weight" with shape [116, 116, 1, 1] - 
+	Output: "436" with shape [1, 116, 14, 14] - 
+
+Node: "BatchNormalization_94" execute "BatchNormalization" in 139.9093ms:
+	Input: "436" with shape [1, 116, 14, 14] - "stage3.1.branch2.6.weight" with shape [116] - "stage3.1.branch2.6.bias" with shape [116] - "stage3.1.branch2.6.running_mean" with shape [116] - "stage3.1.branch2.6.running_var" with shape [116] - 
+	Output: "437" with shape [1, 116, 14, 14] - 
+
+Node: "Relu_95" execute "Relu" in 783.7µs:
+	Input: "437" with shape [1, 116, 14, 14] - 
+	Output: "438" with shape [1, 116, 14, 14] - 
+
+Node: "Concat_96" execute "Concat" in 3.6123ms:
+	Input: "429" with shape [1, 116, 14, 14] - "438" with shape [1, 116, 14, 14] - 
+	Output: "439" with shape [1, 232, 14, 14] - 
+
+Node: "Constant_97" execute "Constant" in 971.5µs:
+	Input: 
+	Output: "440" with shape [5] - 
+
+Node: "Reshape_98" execute "Reshape" in 1.7599ms:
+	Input: "439" with shape [1, 232, 14, 14] - "440" with shape [5] - 
+	Output: "441" with shape [1, 2, 116, 14, 14] - 
+
+Node: "Transpose_99" execute "Transpose" in 910.8µs:
+	Input: "441" with shape [1, 2, 116, 14, 14] - 
+	Output: "442" with shape [1, 116, 2, 14, 14] - 
+
+Node: "Constant_100" execute "Constant" in 672.5µs:
+	Input: 
+	Output: "443" with shape [4] - 
+
+Node: "Reshape_101" execute "Reshape" in 40.2612ms:
+	Input: "442" with shape [1, 116, 2, 14, 14] - "443" with shape [4] - 
+	Output: "444" with shape [1, 232, 14, 14] - 
+
+Node: "Split_102" execute "Split" in 1.0852ms:
+	Input: "444" with shape [1, 232, 14, 14] - 
+	Output: "445" with shape [1, 116, 14, 14] - "446" with shape [1, 116, 14, 14] - 
+
+Node: "Conv_103" execute "Conv" in 8.8160245s:
+	Input: "446" with shape [1, 116, 14, 14] - "stage3.2.branch2.0.weight" with shape [116, 116, 1, 1] - 
+	Output: "447" with shape [1, 116, 14, 14] - 
+
+Node: "BatchNormalization_104" execute "BatchNormalization" in 136.9129ms:
+	Input: "447" with shape [1, 116, 14, 14] - "stage3.2.branch2.1.weight" with shape [116] - "stage3.2.branch2.1.bias" with shape [116] - "stage3.2.branch2.1.running_mean" with shape [116] - "stage3.2.branch2.1.running_var" with shape [116] - 
+	Output: "448" with shape [1, 116, 14, 14] - 
+
+Node: "Relu_105" execute "Relu" in 729.2µs:
+	Input: "448" with shape [1, 116, 14, 14] - 
+	Output: "449" with shape [1, 116, 14, 14] - 
+
+Node: "Conv_106" execute "Conv" in 81.8565593s:
+	Input: "449" with shape [1, 116, 14, 14] - "stage3.2.branch2.3.weight" with shape [116, 1, 3, 3] - 
+	Output: "450" with shape [1, 116, 14, 14] - 
+
+Node: "BatchNormalization_107" execute "BatchNormalization" in 99.8571ms:
+	Input: "450" with shape [1, 116, 14, 14] - "stage3.2.branch2.4.weight" with shape [116] - "stage3.2.branch2.4.bias" with shape [116] - "stage3.2.branch2.4.running_mean" with shape [116] - "stage3.2.branch2.4.running_var" with shape [116] - 
+	Output: "451" with shape [1, 116, 14, 14] - 
+
+Node: "Conv_108" execute "Conv" in 8.7753536s:
+	Input: "451" with shape [1, 116, 14, 14] - "stage3.2.branch2.5.weight" with shape [116, 116, 1, 1] - 
+	Output: "452" with shape [1, 116, 14, 14] - 
+
+Node: "BatchNormalization_109" execute "BatchNormalization" in 172.2246ms:
+	Input: "452" with shape [1, 116, 14, 14] - "stage3.2.branch2.6.weight" with shape [116] - "stage3.2.branch2.6.bias" with shape [116] - "stage3.2.branch2.6.running_mean" with shape [116] - "stage3.2.branch2.6.running_var" with shape [116] - 
+	Output: "453" with shape [1, 116, 14, 14] - 
+
+Node: "Relu_110" execute "Relu" in 579.9µs:
+	Input: "453" with shape [1, 116, 14, 14] - 
+	Output: "454" with shape [1, 116, 14, 14] - 
+
+Node: "Concat_111" execute "Concat" in 2.8986ms:
+	Input: "445" with shape [1, 116, 14, 14] - "454" with shape [1, 116, 14, 14] - 
+	Output: "455" with shape [1, 232, 14, 14] - 
+
+Node: "Constant_112" execute "Constant" in 767.1µs:
+	Input: 
+	Output: "456" with shape [5] - 
+
+Node: "Reshape_113" execute "Reshape" in 1.7812ms:
+	Input: "455" with shape [1, 232, 14, 14] - "456" with shape [5] - 
+	Output: "457" with shape [1, 2, 116, 14, 14] - 
+
+Node: "Transpose_114" execute "Transpose" in 906.3µs:
+	Input: "457" with shape [1, 2, 116, 14, 14] - 
+	Output: "458" with shape [1, 116, 2, 14, 14] - 
+
+Node: "Constant_115" execute "Constant" in 576.6µs:
+	Input: 
+	Output: "459" with shape [4] - 
+
+Node: "Reshape_116" execute "Reshape" in 37.1523ms:
+	Input: "458" with shape [1, 116, 2, 14, 14] - "459" with shape [4] - 
+	Output: "460" with shape [1, 232, 14, 14] - 
+
+Node: "Split_117" execute "Split" in 1.5975ms:
+	Input: "460" with shape [1, 232, 14, 14] - 
+	Output: "462" with shape [1, 116, 14, 14] - "461" with shape [1, 116, 14, 14] - 
+
+Node: "Conv_118" execute "Conv" in 9.0247496s:
+	Input: "462" with shape [1, 116, 14, 14] - "stage3.3.branch2.0.weight" with shape [116, 116, 1, 1] - 
+	Output: "463" with shape [1, 116, 14, 14] - 
+
+Node: "BatchNormalization_119" execute "BatchNormalization" in 115.4672ms:
+	Input: "463" with shape [1, 116, 14, 14] - "stage3.3.branch2.1.weight" with shape [116] - "stage3.3.branch2.1.bias" with shape [116] - "stage3.3.branch2.1.running_mean" with shape [116] - "stage3.3.branch2.1.running_var" with shape [116] - 
+	Output: "464" with shape [1, 116, 14, 14] - 
+
+Node: "Relu_120" execute "Relu" in 729.5µs:
+	Input: "464" with shape [1, 116, 14, 14] - 
+	Output: "465" with shape [1, 116, 14, 14] - 
+
+Node: "Conv_121" execute "Conv" in 81.1466258s:
+	Input: "465" with shape [1, 116, 14, 14] - "stage3.3.branch2.3.weight" with shape [116, 1, 3, 3] - 
+	Output: "466" with shape [1, 116, 14, 14] - 
+
+Node: "BatchNormalization_122" execute "BatchNormalization" in 141.0315ms:
+	Input: "466" with shape [1, 116, 14, 14] - "stage3.3.branch2.4.weight" with shape [116] - "stage3.3.branch2.4.bias" with shape [116] - "stage3.3.branch2.4.running_mean" with shape [116] - "stage3.3.branch2.4.running_var" with shape [116] - 
+	Output: "467" with shape [1, 116, 14, 14] - 
+
+Node: "Conv_123" execute "Conv" in 8.8187262s:
+	Input: "467" with shape [1, 116, 14, 14] - "stage3.3.branch2.5.weight" with shape [116, 116, 1, 1] - 
+	Output: "468" with shape [1, 116, 14, 14] - 
+
+Node: "BatchNormalization_124" execute "BatchNormalization" in 133.2129ms:
+	Input: "468" with shape [1, 116, 14, 14] - "stage3.3.branch2.6.weight" with shape [116] - "stage3.3.branch2.6.bias" with shape [116] - "stage3.3.branch2.6.running_mean" with shape [116] - "stage3.3.branch2.6.running_var" with shape [116] - 
+	Output: "469" with shape [1, 116, 14, 14] - 
+
+Node: "Relu_125" execute "Relu" in 908µs:
+	Input: "469" with shape [1, 116, 14, 14] - 
+	Output: "470" with shape [1, 116, 14, 14] - 
+
+Node: "Concat_126" execute "Concat" in 3.9953ms:
+	Input: "461" with shape [1, 116, 14, 14] - "470" with shape [1, 116, 14, 14] - 
+	Output: "471" with shape [1, 232, 14, 14] - 
+
+Node: "Constant_127" execute "Constant" in 425.9µs:
+	Input: 
+	Output: "472" with shape [5] - 
+
+Node: "Reshape_128" execute "Reshape" in 2.1113ms:
+	Input: "471" with shape [1, 232, 14, 14] - "472" with shape [5] - 
+	Output: "473" with shape [1, 2, 116, 14, 14] - 
+
+Node: "Transpose_129" execute "Transpose" in 1.0295ms:
+	Input: "473" with shape [1, 2, 116, 14, 14] - 
+	Output: "474" with shape [1, 116, 2, 14, 14] - 
+
+Node: "Constant_130" execute "Constant" in 444.2µs:
+	Input: 
+	Output: "475" with shape [4] - 
+
+Node: "Reshape_131" execute "Reshape" in 44.4732ms:
+	Input: "474" with shape [1, 116, 2, 14, 14] - "475" with shape [4] - 
+	Output: "476" with shape [1, 232, 14, 14] - 
+
+Node: "Split_132" execute "Split" in 1.4464ms:
+	Input: "476" with shape [1, 232, 14, 14] - 
+	Output: "477" with shape [1, 116, 14, 14] - "478" with shape [1, 116, 14, 14] - 
+
+Node: "Conv_133" execute "Conv" in 8.6993106s:
+	Input: "478" with shape [1, 116, 14, 14] - "stage3.4.branch2.0.weight" with shape [116, 116, 1, 1] - 
+	Output: "479" with shape [1, 116, 14, 14] - 
+
+Node: "BatchNormalization_134" execute "BatchNormalization" in 118.2298ms:
+	Input: "479" with shape [1, 116, 14, 14] - "stage3.4.branch2.1.weight" with shape [116] - "stage3.4.branch2.1.bias" with shape [116] - "stage3.4.branch2.1.running_mean" with shape [116] - "stage3.4.branch2.1.running_var" with shape [116] - 
+	Output: "480" with shape [1, 116, 14, 14] - 
+
+Node: "Relu_135" execute "Relu" in 554.4µs:
+	Input: "480" with shape [1, 116, 14, 14] - 
+	Output: "481" with shape [1, 116, 14, 14] - 
+
+Node: "Conv_136" execute "Conv" in 81.2270888s:
+	Input: "481" with shape [1, 116, 14, 14] - "stage3.4.branch2.3.weight" with shape [116, 1, 3, 3] - 
+	Output: "482" with shape [1, 116, 14, 14] - 
+
+Node: "BatchNormalization_137" execute "BatchNormalization" in 119.9127ms:
+	Input: "482" with shape [1, 116, 14, 14] - "stage3.4.branch2.4.weight" with shape [116] - "stage3.4.branch2.4.bias" with shape [116] - "stage3.4.branch2.4.running_mean" with shape [116] - "stage3.4.branch2.4.running_var" with shape [116] - 
+	Output: "483" with shape [1, 116, 14, 14] - 
+
+Node: "Conv_138" execute "Conv" in 8.6860084s:
+	Input: "483" with shape [1, 116, 14, 14] - "stage3.4.branch2.5.weight" with shape [116, 116, 1, 1] - 
+	Output: "484" with shape [1, 116, 14, 14] - 
+
+Node: "BatchNormalization_139" execute "BatchNormalization" in 117.3101ms:
+	Input: "484" with shape [1, 116, 14, 14] - "stage3.4.branch2.6.weight" with shape [116] - "stage3.4.branch2.6.bias" with shape [116] - "stage3.4.branch2.6.running_mean" with shape [116] - "stage3.4.branch2.6.running_var" with shape [116] - 
+	Output: "485" with shape [1, 116, 14, 14] - 
+
+Node: "Relu_140" execute "Relu" in 956.1µs:
+	Input: "485" with shape [1, 116, 14, 14] - 
+	Output: "486" with shape [1, 116, 14, 14] - 
+
+Node: "Concat_141" execute "Concat" in 5.8991ms:
+	Input: "477" with shape [1, 116, 14, 14] - "486" with shape [1, 116, 14, 14] - 
+	Output: "487" with shape [1, 232, 14, 14] - 
+
+Node: "Constant_142" execute "Constant" in 514.9µs:
+	Input: 
+	Output: "488" with shape [5] - 
+
+Node: "Reshape_143" execute "Reshape" in 2.876ms:
+	Input: "487" with shape [1, 232, 14, 14] - "488" with shape [5] - 
+	Output: "489" with shape [1, 2, 116, 14, 14] - 
+
+Node: "Transpose_144" execute "Transpose" in 1.288ms:
+	Input: "489" with shape [1, 2, 116, 14, 14] - 
+	Output: "490" with shape [1, 116, 2, 14, 14] - 
+
+Node: "Constant_145" execute "Constant" in 397.4µs:
+	Input: 
+	Output: "491" with shape [4] - 
+
+Node: "Reshape_146" execute "Reshape" in 60.6296ms:
+	Input: "490" with shape [1, 116, 2, 14, 14] - "491" with shape [4] - 
+	Output: "492" with shape [1, 232, 14, 14] - 
+
+Node: "Split_147" execute "Split" in 1.5266ms:
+	Input: "492" with shape [1, 232, 14, 14] - 
+	Output: "493" with shape [1, 116, 14, 14] - "494" with shape [1, 116, 14, 14] - 
+
+Node: "Conv_148" execute "Conv" in 8.9807294s:
+	Input: "494" with shape [1, 116, 14, 14] - "stage3.5.branch2.0.weight" with shape [116, 116, 1, 1] - 
+	Output: "495" with shape [1, 116, 14, 14] - 
+
+Node: "BatchNormalization_149" execute "BatchNormalization" in 125.8223ms:
+	Input: "495" with shape [1, 116, 14, 14] - "stage3.5.branch2.1.weight" with shape [116] - "stage3.5.branch2.1.bias" with shape [116] - "stage3.5.branch2.1.running_mean" with shape [116] - "stage3.5.branch2.1.running_var" with shape [116] - 
+	Output: "496" with shape [1, 116, 14, 14] - 
+
+Node: "Relu_150" execute "Relu" in 1.0467ms:
+	Input: "496" with shape [1, 116, 14, 14] - 
+	Output: "497" with shape [1, 116, 14, 14] - 
+
+Node: "Conv_151" execute "Conv" in 75.6016053s:
+	Input: "497" with shape [1, 116, 14, 14] - "stage3.5.branch2.3.weight" with shape [116, 1, 3, 3] - 
+	Output: "498" with shape [1, 116, 14, 14] - 
+
+Node: "BatchNormalization_152" execute "BatchNormalization" in 80.6923ms:
+	Input: "498" with shape [1, 116, 14, 14] - "stage3.5.branch2.4.weight" with shape [116] - "stage3.5.branch2.4.bias" with shape [116] - "stage3.5.branch2.4.running_mean" with shape [116] - "stage3.5.branch2.4.running_var" with shape [116] - 
+	Output: "499" with shape [1, 116, 14, 14] - 
+
+Node: "Conv_153" execute "Conv" in 5.5291242s:
+	Input: "499" with shape [1, 116, 14, 14] - "stage3.5.branch2.5.weight" with shape [116, 116, 1, 1] - 
+	Output: "500" with shape [1, 116, 14, 14] - 
+
+Node: "BatchNormalization_154" execute "BatchNormalization" in 105.9314ms:
+	Input: "500" with shape [1, 116, 14, 14] - "stage3.5.branch2.6.weight" with shape [116] - "stage3.5.branch2.6.bias" with shape [116] - "stage3.5.branch2.6.running_mean" with shape [116] - "stage3.5.branch2.6.running_var" with shape [116] - 
+	Output: "501" with shape [1, 116, 14, 14] - 
+
+Node: "Relu_155" execute "Relu" in 824.4µs:
+	Input: "501" with shape [1, 116, 14, 14] - 
+	Output: "502" with shape [1, 116, 14, 14] - 
+
+Node: "Concat_156" execute "Concat" in 2.4734ms:
+	Input: "493" with shape [1, 116, 14, 14] - "502" with shape [1, 116, 14, 14] - 
+	Output: "503" with shape [1, 232, 14, 14] - 
+
+Node: "Constant_157" execute "Constant" in 888.8µs:
+	Input: 
+	Output: "504" with shape [5] - 
+
+Node: "Reshape_158" execute "Reshape" in 1.1451ms:
+	Input: "503" with shape [1, 232, 14, 14] - "504" with shape [5] - 
+	Output: "505" with shape [1, 2, 116, 14, 14] - 
+
+Node: "Transpose_159" execute "Transpose" in 712.5µs:
+	Input: "505" with shape [1, 2, 116, 14, 14] - 
+	Output: "506" with shape [1, 116, 2, 14, 14] - 
+
+Node: "Constant_160" execute "Constant" in 464µs:
+	Input: 
+	Output: "507" with shape [4] - 
+
+Node: "Reshape_161" execute "Reshape" in 29.6194ms:
+	Input: "506" with shape [1, 116, 2, 14, 14] - "507" with shape [4] - 
+	Output: "508" with shape [1, 232, 14, 14] - 
+
+Node: "Split_162" execute "Split" in 1.3602ms:
+	Input: "508" with shape [1, 232, 14, 14] - 
+	Output: "509" with shape [1, 116, 14, 14] - "510" with shape [1, 116, 14, 14] - 
+
+Node: "Conv_163" execute "Conv" in 5.361017s:
+	Input: "510" with shape [1, 116, 14, 14] - "stage3.6.branch2.0.weight" with shape [116, 116, 1, 1] - 
+	Output: "511" with shape [1, 116, 14, 14] - 
+
+Node: "BatchNormalization_164" execute "BatchNormalization" in 106.4304ms:
+	Input: "511" with shape [1, 116, 14, 14] - "stage3.6.branch2.1.weight" with shape [116] - "stage3.6.branch2.1.bias" with shape [116] - "stage3.6.branch2.1.running_mean" with shape [116] - "stage3.6.branch2.1.running_var" with shape [116] - 
+	Output: "512" with shape [1, 116, 14, 14] - 
+
+Node: "Relu_165" execute "Relu" in 772.4µs:
+	Input: "512" with shape [1, 116, 14, 14] - 
+	Output: "513" with shape [1, 116, 14, 14] - 
+
+Node: "Conv_166" execute "Conv" in 76.0099657s:
+	Input: "513" with shape [1, 116, 14, 14] - "stage3.6.branch2.3.weight" with shape [116, 1, 3, 3] - 
+	Output: "514" with shape [1, 116, 14, 14] - 
+
+Node: "BatchNormalization_167" execute "BatchNormalization" in 112.2471ms:
+	Input: "514" with shape [1, 116, 14, 14] - "stage3.6.branch2.4.weight" with shape [116] - "stage3.6.branch2.4.bias" with shape [116] - "stage3.6.branch2.4.running_mean" with shape [116] - "stage3.6.branch2.4.running_var" with shape [116] - 
+	Output: "515" with shape [1, 116, 14, 14] - 
+
+Node: "Conv_168" execute "Conv" in 8.7361119s:
+	Input: "515" with shape [1, 116, 14, 14] - "stage3.6.branch2.5.weight" with shape [116, 116, 1, 1] - 
+	Output: "516" with shape [1, 116, 14, 14] - 
+
+Node: "BatchNormalization_169" execute "BatchNormalization" in 134.1788ms:
+	Input: "516" with shape [1, 116, 14, 14] - "stage3.6.branch2.6.weight" with shape [116] - "stage3.6.branch2.6.bias" with shape [116] - "stage3.6.branch2.6.running_mean" with shape [116] - "stage3.6.branch2.6.running_var" with shape [116] - 
+	Output: "517" with shape [1, 116, 14, 14] - 
+
+Node: "Relu_170" execute "Relu" in 742µs:
+	Input: "517" with shape [1, 116, 14, 14] - 
+	Output: "518" with shape [1, 116, 14, 14] - 
+
+Node: "Concat_171" execute "Concat" in 3.2016ms:
+	Input: "509" with shape [1, 116, 14, 14] - "518" with shape [1, 116, 14, 14] - 
+	Output: "519" with shape [1, 232, 14, 14] - 
+
+Node: "Constant_172" execute "Constant" in 432µs:
+	Input: 
+	Output: "520" with shape [5] - 
+
+Node: "Reshape_173" execute "Reshape" in 1.8033ms:
+	Input: "519" with shape [1, 232, 14, 14] - "520" with shape [5] - 
+	Output: "521" with shape [1, 2, 116, 14, 14] - 
+
+Node: "Transpose_174" execute "Transpose" in 862.7µs:
+	Input: "521" with shape [1, 2, 116, 14, 14] - 
+	Output: "522" with shape [1, 116, 2, 14, 14] - 
+
+Node: "Constant_175" execute "Constant" in 441.4µs:
+	Input: 
+	Output: "523" with shape [4] - 
+
+Node: "Reshape_176" execute "Reshape" in 48.6128ms:
+	Input: "522" with shape [1, 116, 2, 14, 14] - "523" with shape [4] - 
+	Output: "524" with shape [1, 232, 14, 14] - 
+
+Node: "Split_177" execute "Split" in 1.3368ms:
+	Input: "524" with shape [1, 232, 14, 14] - 
+	Output: "525" with shape [1, 116, 14, 14] - "526" with shape [1, 116, 14, 14] - 
+
+Node: "Conv_178" execute "Conv" in 8.9802527s:
+	Input: "526" with shape [1, 116, 14, 14] - "stage3.7.branch2.0.weight" with shape [116, 116, 1, 1] - 
+	Output: "527" with shape [1, 116, 14, 14] - 
+
+Node: "BatchNormalization_179" execute "BatchNormalization" in 84.2449ms:
+	Input: "527" with shape [1, 116, 14, 14] - "stage3.7.branch2.1.weight" with shape [116] - "stage3.7.branch2.1.bias" with shape [116] - "stage3.7.branch2.1.running_mean" with shape [116] - "stage3.7.branch2.1.running_var" with shape [116] - 
+	Output: "528" with shape [1, 116, 14, 14] - 
+
+Node: "Relu_180" execute "Relu" in 542.5µs:
+	Input: "528" with shape [1, 116, 14, 14] - 
+	Output: "529" with shape [1, 116, 14, 14] - 
+
+Node: "Conv_181" execute "Conv" in 41.5419707s:
+	Input: "529" with shape [1, 116, 14, 14] - "stage3.7.branch2.3.weight" with shape [116, 1, 3, 3] - 
+	Output: "530" with shape [1, 116, 14, 14] - 
+
+Node: "BatchNormalization_182" execute "BatchNormalization" in 50.055ms:
+	Input: "530" with shape [1, 116, 14, 14] - "stage3.7.branch2.4.weight" with shape [116] - "stage3.7.branch2.4.bias" with shape [116] - "stage3.7.branch2.4.running_mean" with shape [116] - "stage3.7.branch2.4.running_var" with shape [116] - 
+	Output: "531" with shape [1, 116, 14, 14] - 
+
+Node: "Conv_183" execute "Conv" in 2.8170683s:
+	Input: "531" with shape [1, 116, 14, 14] - "stage3.7.branch2.5.weight" with shape [116, 116, 1, 1] - 
+	Output: "532" with shape [1, 116, 14, 14] - 
+
+Node: "BatchNormalization_184" execute "BatchNormalization" in 51.118ms:
+	Input: "532" with shape [1, 116, 14, 14] - "stage3.7.branch2.6.weight" with shape [116] - "stage3.7.branch2.6.bias" with shape [116] - "stage3.7.branch2.6.running_mean" with shape [116] - "stage3.7.branch2.6.running_var" with shape [116] - 
+	Output: "533" with shape [1, 116, 14, 14] - 
+
+Node: "Relu_185" execute "Relu" in 345.4µs:
+	Input: "533" with shape [1, 116, 14, 14] - 
+	Output: "534" with shape [1, 116, 14, 14] - 
+
+Node: "Concat_186" execute "Concat" in 1.5775ms:
+	Input: "525" with shape [1, 116, 14, 14] - "534" with shape [1, 116, 14, 14] - 
+	Output: "535" with shape [1, 232, 14, 14] - 
+
+Node: "Constant_187" execute "Constant" in 666.5µs:
+	Input: 
+	Output: "536" with shape [5] - 
+
+Node: "Reshape_188" execute "Reshape" in 750.5µs:
+	Input: "535" with shape [1, 232, 14, 14] - "536" with shape [5] - 
+	Output: "537" with shape [1, 2, 116, 14, 14] - 
+
+Node: "Transpose_189" execute "Transpose" in 558.2µs:
+	Input: "537" with shape [1, 2, 116, 14, 14] - 
+	Output: "538" with shape [1, 116, 2, 14, 14] - 
+
+Node: "Constant_190" execute "Constant" in 538.4µs:
+	Input: 
+	Output: "539" with shape [4] - 
+
+Node: "Reshape_191" execute "Reshape" in 17.2209ms:
+	Input: "538" with shape [1, 116, 2, 14, 14] - "539" with shape [4] - 
+	Output: "540" with shape [1, 232, 14, 14] - 
+
+Node: "Conv_192" execute "Conv" in 29.2994584s:
+	Input: "540" with shape [1, 232, 14, 14] - "stage4.0.branch1.0.weight" with shape [232, 1, 3, 3] - 
+	Output: "541" with shape [1, 232, 7, 7] - 
+
+Node: "BatchNormalization_193" execute "BatchNormalization" in 26.8164ms:
+	Input: "541" with shape [1, 232, 7, 7] - "stage4.0.branch1.1.weight" with shape [232] - "stage4.0.branch1.1.bias" with shape [232] - "stage4.0.branch1.1.running_mean" with shape [232] - "stage4.0.branch1.1.running_var" with shape [232] - 
+	Output: "542" with shape [1, 232, 7, 7] - 
+
+Node: "Conv_194" execute "Conv" in 2.9743778s:
+	Input: "542" with shape [1, 232, 7, 7] - "stage4.0.branch1.2.weight" with shape [232, 232, 1, 1] - 
+	Output: "543" with shape [1, 232, 7, 7] - 
+
+Node: "BatchNormalization_195" execute "BatchNormalization" in 26.8304ms:
+	Input: "543" with shape [1, 232, 7, 7] - "stage4.0.branch1.3.weight" with shape [232] - "stage4.0.branch1.3.bias" with shape [232] - "stage4.0.branch1.3.running_mean" with shape [232] - "stage4.0.branch1.3.running_var" with shape [232] - 
+	Output: "544" with shape [1, 232, 7, 7] - 
+
+Node: "Relu_196" execute "Relu" in 285.2µs:
+	Input: "544" with shape [1, 232, 7, 7] - 
+	Output: "545" with shape [1, 232, 7, 7] - 
+
+Node: "Conv_197" execute "Conv" in 12.4570142s:
+	Input: "540" with shape [1, 232, 14, 14] - "stage4.0.branch2.0.weight" with shape [232, 232, 1, 1] - 
+	Output: "546" with shape [1, 232, 14, 14] - 
+
+Node: "BatchNormalization_198" execute "BatchNormalization" in 103.4726ms:
+	Input: "546" with shape [1, 232, 14, 14] - "stage4.0.branch2.1.weight" with shape [232] - "stage4.0.branch2.1.bias" with shape [232] - "stage4.0.branch2.1.running_mean" with shape [232] - "stage4.0.branch2.1.running_var" with shape [232] - 
+	Output: "547" with shape [1, 232, 14, 14] - 
+
+Node: "Relu_199" execute "Relu" in 760.3µs:
+	Input: "547" with shape [1, 232, 14, 14] - 
+	Output: "548" with shape [1, 232, 14, 14] - 
+
+Node: "Conv_200" execute "Conv" in 28.7746387s:
+	Input: "548" with shape [1, 232, 14, 14] - "stage4.0.branch2.3.weight" with shape [232, 1, 3, 3] - 
+	Output: "549" with shape [1, 232, 7, 7] - 
+
+Node: "BatchNormalization_201" execute "BatchNormalization" in 25.6583ms:
+	Input: "549" with shape [1, 232, 7, 7] - "stage4.0.branch2.4.weight" with shape [232] - "stage4.0.branch2.4.bias" with shape [232] - "stage4.0.branch2.4.running_mean" with shape [232] - "stage4.0.branch2.4.running_var" with shape [232] - 
+	Output: "550" with shape [1, 232, 7, 7] - 
+
+Node: "Conv_202" execute "Conv" in 2.8460035s:
+	Input: "550" with shape [1, 232, 7, 7] - "stage4.0.branch2.5.weight" with shape [232, 232, 1, 1] - 
+	Output: "551" with shape [1, 232, 7, 7] - 
+
+Node: "BatchNormalization_203" execute "BatchNormalization" in 25.3589ms:
+	Input: "551" with shape [1, 232, 7, 7] - "stage4.0.branch2.6.weight" with shape [232] - "stage4.0.branch2.6.bias" with shape [232] - "stage4.0.branch2.6.running_mean" with shape [232] - "stage4.0.branch2.6.running_var" with shape [232] - 
+	Output: "552" with shape [1, 232, 7, 7] - 
+
+Node: "Relu_204" execute "Relu" in 198.8µs:
+	Input: "552" with shape [1, 232, 7, 7] - 
+	Output: "553" with shape [1, 232, 7, 7] - 
+
+Node: "Concat_205" execute "Concat" in 1.0183ms:
+	Input: "545" with shape [1, 232, 7, 7] - "553" with shape [1, 232, 7, 7] - 
+	Output: "554" with shape [1, 464, 7, 7] - 
+
+Node: "Constant_206" execute "Constant" in 500.2µs:
+	Input: 
+	Output: "555" with shape [5] - 
+
+Node: "Reshape_207" execute "Reshape" in 417.6µs:
+	Input: "554" with shape [1, 464, 7, 7] - "555" with shape [5] - 
+	Output: "556" with shape [1, 2, 232, 7, 7] - 
+
+Node: "Transpose_208" execute "Transpose" in 500.8µs:
+	Input: "556" with shape [1, 2, 232, 7, 7] - 
+	Output: "557" with shape [1, 232, 2, 7, 7] - 
+
+Node: "Constant_209" execute "Constant" in 540µs:
+	Input: 
+	Output: "558" with shape [4] - 
+
+Node: "Reshape_210" execute "Reshape" in 9.1811ms:
+	Input: "557" with shape [1, 232, 2, 7, 7] - "558" with shape [4] - 
+	Output: "559" with shape [1, 464, 7, 7] - 
+
+Node: "Split_211" execute "Split" in 732.7µs:
+	Input: "559" with shape [1, 464, 7, 7] - 
+	Output: "560" with shape [1, 232, 7, 7] - "561" with shape [1, 232, 7, 7] - 
+
+Node: "Conv_212" execute "Conv" in 2.8318512s:
+	Input: "561" with shape [1, 232, 7, 7] - "stage4.1.branch2.0.weight" with shape [232, 232, 1, 1] - 
+	Output: "562" with shape [1, 232, 7, 7] - 
+
+Node: "BatchNormalization_213" execute "BatchNormalization" in 25.5223ms:
+	Input: "562" with shape [1, 232, 7, 7] - "stage4.1.branch2.1.weight" with shape [232] - "stage4.1.branch2.1.bias" with shape [232] - "stage4.1.branch2.1.running_mean" with shape [232] - "stage4.1.branch2.1.running_var" with shape [232] - 
+	Output: "563" with shape [1, 232, 7, 7] - 
+
+Node: "Relu_214" execute "Relu" in 209.9µs:
+	Input: "563" with shape [1, 232, 7, 7] - 
+	Output: "564" with shape [1, 232, 7, 7] - 
+
+Node: "Conv_215" execute "Conv" in 26.0573584s:
+	Input: "564" with shape [1, 232, 7, 7] - "stage4.1.branch2.3.weight" with shape [232, 1, 3, 3] - 
+	Output: "565" with shape [1, 232, 7, 7] - 
+
+Node: "BatchNormalization_216" execute "BatchNormalization" in 25.4027ms:
+	Input: "565" with shape [1, 232, 7, 7] - "stage4.1.branch2.4.weight" with shape [232] - "stage4.1.branch2.4.bias" with shape [232] - "stage4.1.branch2.4.running_mean" with shape [232] - "stage4.1.branch2.4.running_var" with shape [232] - 
+	Output: "566" with shape [1, 232, 7, 7] - 
+
+Node: "Conv_217" execute "Conv" in 2.8233169s:
+	Input: "566" with shape [1, 232, 7, 7] - "stage4.1.branch2.5.weight" with shape [232, 232, 1, 1] - 
+	Output: "567" with shape [1, 232, 7, 7] - 
+
+Node: "BatchNormalization_218" execute "BatchNormalization" in 25.2823ms:
+	Input: "567" with shape [1, 232, 7, 7] - "stage4.1.branch2.6.weight" with shape [232] - "stage4.1.branch2.6.bias" with shape [232] - "stage4.1.branch2.6.running_mean" with shape [232] - "stage4.1.branch2.6.running_var" with shape [232] - 
+	Output: "568" with shape [1, 232, 7, 7] - 
+
+Node: "Relu_219" execute "Relu" in 198.5µs:
+	Input: "568" with shape [1, 232, 7, 7] - 
+	Output: "569" with shape [1, 232, 7, 7] - 
+
+Node: "Concat_220" execute "Concat" in 978µs:
+	Input: "560" with shape [1, 232, 7, 7] - "569" with shape [1, 232, 7, 7] - 
+	Output: "570" with shape [1, 464, 7, 7] - 
+
+Node: "Constant_221" execute "Constant" in 469.9µs:
+	Input: 
+	Output: "571" with shape [5] - 
+
+Node: "Reshape_222" execute "Reshape" in 410.7µs:
+	Input: "570" with shape [1, 464, 7, 7] - "571" with shape [5] - 
+	Output: "572" with shape [1, 2, 232, 7, 7] - 
+
+Node: "Transpose_223" execute "Transpose" in 608.2µs:
+	Input: "572" with shape [1, 2, 232, 7, 7] - 
+	Output: "573" with shape [1, 232, 2, 7, 7] - 
+
+Node: "Constant_224" execute "Constant" in 492.6µs:
+	Input: 
+	Output: "574" with shape [4] - 
+
+Node: "Reshape_225" execute "Reshape" in 9.3884ms:
+	Input: "573" with shape [1, 232, 2, 7, 7] - "574" with shape [4] - 
+	Output: "575" with shape [1, 464, 7, 7] - 
+
+Node: "Split_226" execute "Split" in 671.2µs:
+	Input: "575" with shape [1, 464, 7, 7] - 
+	Output: "577" with shape [1, 232, 7, 7] - "576" with shape [1, 232, 7, 7] - 
+
+Node: "Conv_227" execute "Conv" in 2.8297998s:
+	Input: "577" with shape [1, 232, 7, 7] - "stage4.2.branch2.0.weight" with shape [232, 232, 1, 1] - 
+	Output: "578" with shape [1, 232, 7, 7] - 
+
+Node: "BatchNormalization_228" execute "BatchNormalization" in 25.6234ms:
+	Input: "578" with shape [1, 232, 7, 7] - "stage4.2.branch2.1.weight" with shape [232] - "stage4.2.branch2.1.bias" with shape [232] - "stage4.2.branch2.1.running_mean" with shape [232] - "stage4.2.branch2.1.running_var" with shape [232] - 
+	Output: "579" with shape [1, 232, 7, 7] - 
+
+Node: "Relu_229" execute "Relu" in 245.1µs:
+	Input: "579" with shape [1, 232, 7, 7] - 
+	Output: "580" with shape [1, 232, 7, 7] - 
+
+Node: "Conv_230" execute "Conv" in 25.4224778s:
+	Input: "580" with shape [1, 232, 7, 7] - "stage4.2.branch2.3.weight" with shape [232, 1, 3, 3] - 
+	Output: "581" with shape [1, 232, 7, 7] - 
+
+Node: "BatchNormalization_231" execute "BatchNormalization" in 25.9799ms:
+	Input: "581" with shape [1, 232, 7, 7] - "stage4.2.branch2.4.weight" with shape [232] - "stage4.2.branch2.4.bias" with shape [232] - "stage4.2.branch2.4.running_mean" with shape [232] - "stage4.2.branch2.4.running_var" with shape [232] - 
+	Output: "582" with shape [1, 232, 7, 7] - 
+
+Node: "Conv_232" execute "Conv" in 2.8323849s:
+	Input: "582" with shape [1, 232, 7, 7] - "stage4.2.branch2.5.weight" with shape [232, 232, 1, 1] - 
+	Output: "583" with shape [1, 232, 7, 7] - 
+
+Node: "BatchNormalization_233" execute "BatchNormalization" in 25.5395ms:
+	Input: "583" with shape [1, 232, 7, 7] - "stage4.2.branch2.6.weight" with shape [232] - "stage4.2.branch2.6.bias" with shape [232] - "stage4.2.branch2.6.running_mean" with shape [232] - "stage4.2.branch2.6.running_var" with shape [232] - 
+	Output: "584" with shape [1, 232, 7, 7] - 
+
+Node: "Relu_234" execute "Relu" in 195.3µs:
+	Input: "584" with shape [1, 232, 7, 7] - 
+	Output: "585" with shape [1, 232, 7, 7] - 
+
+Node: "Concat_235" execute "Concat" in 1.0489ms:
+	Input: "576" with shape [1, 232, 7, 7] - "585" with shape [1, 232, 7, 7] - 
+	Output: "586" with shape [1, 464, 7, 7] - 
+
+Node: "Constant_236" execute "Constant" in 595.3µs:
+	Input: 
+	Output: "587" with shape [5] - 
+
+Node: "Reshape_237" execute "Reshape" in 417.5µs:
+	Input: "586" with shape [1, 464, 7, 7] - "587" with shape [5] - 
+	Output: "588" with shape [1, 2, 232, 7, 7] - 
+
+Node: "Transpose_238" execute "Transpose" in 671.3µs:
+	Input: "588" with shape [1, 2, 232, 7, 7] - 
+	Output: "589" with shape [1, 232, 2, 7, 7] - 
+
+Node: "Constant_239" execute "Constant" in 560.6µs:
+	Input: 
+	Output: "590" with shape [4] - 
+
+Node: "Reshape_240" execute "Reshape" in 9.4209ms:
+	Input: "589" with shape [1, 232, 2, 7, 7] - "590" with shape [4] - 
+	Output: "591" with shape [1, 464, 7, 7] - 
+
+Node: "Split_241" execute "Split" in 653.4µs:
+	Input: "591" with shape [1, 464, 7, 7] - 
+	Output: "592" with shape [1, 232, 7, 7] - "593" with shape [1, 232, 7, 7] - 
+
+Node: "Conv_242" execute "Conv" in 2.832439s:
+	Input: "593" with shape [1, 232, 7, 7] - "stage4.3.branch2.0.weight" with shape [232, 232, 1, 1] - 
+	Output: "594" with shape [1, 232, 7, 7] - 
+
+Node: "BatchNormalization_243" execute "BatchNormalization" in 25.475ms:
+	Input: "594" with shape [1, 232, 7, 7] - "stage4.3.branch2.1.weight" with shape [232] - "stage4.3.branch2.1.bias" with shape [232] - "stage4.3.branch2.1.running_mean" with shape [232] - "stage4.3.branch2.1.running_var" with shape [232] - 
+	Output: "595" with shape [1, 232, 7, 7] - 
+
+Node: "Relu_244" execute "Relu" in 192.2µs:
+	Input: "595" with shape [1, 232, 7, 7] - 
+	Output: "596" with shape [1, 232, 7, 7] - 
+
+Node: "Conv_245" execute "Conv" in 25.5043603s:
+	Input: "596" with shape [1, 232, 7, 7] - "stage4.3.branch2.3.weight" with shape [232, 1, 3, 3] - 
+	Output: "597" with shape [1, 232, 7, 7] - 
+
+Node: "BatchNormalization_246" execute "BatchNormalization" in 26.0365ms:
+	Input: "597" with shape [1, 232, 7, 7] - "stage4.3.branch2.4.weight" with shape [232] - "stage4.3.branch2.4.bias" with shape [232] - "stage4.3.branch2.4.running_mean" with shape [232] - "stage4.3.branch2.4.running_var" with shape [232] - 
+	Output: "598" with shape [1, 232, 7, 7] - 
+
+Node: "Conv_247" execute "Conv" in 2.8340933s:
+	Input: "598" with shape [1, 232, 7, 7] - "stage4.3.branch2.5.weight" with shape [232, 232, 1, 1] - 
+	Output: "599" with shape [1, 232, 7, 7] - 
+
+Node: "BatchNormalization_248" execute "BatchNormalization" in 25.5778ms:
+	Input: "599" with shape [1, 232, 7, 7] - "stage4.3.branch2.6.weight" with shape [232] - "stage4.3.branch2.6.bias" with shape [232] - "stage4.3.branch2.6.running_mean" with shape [232] - "stage4.3.branch2.6.running_var" with shape [232] - 
+	Output: "600" with shape [1, 232, 7, 7] - 
+
+Node: "Relu_249" execute "Relu" in 195.4µs:
+	Input: "600" with shape [1, 232, 7, 7] - 
+	Output: "601" with shape [1, 232, 7, 7] - 
+
+Node: "Concat_250" execute "Concat" in 989.9µs:
+	Input: "592" with shape [1, 232, 7, 7] - "601" with shape [1, 232, 7, 7] - 
+	Output: "602" with shape [1, 464, 7, 7] - 
+
+Node: "Constant_251" execute "Constant" in 492µs:
+	Input: 
+	Output: "603" with shape [5] - 
+
+Node: "Reshape_252" execute "Reshape" in 427.8µs:
+	Input: "602" with shape [1, 464, 7, 7] - "603" with shape [5] - 
+	Output: "604" with shape [1, 2, 232, 7, 7] - 
+
+Node: "Transpose_253" execute "Transpose" in 505.1µs:
+	Input: "604" with shape [1, 2, 232, 7, 7] - 
+	Output: "605" with shape [1, 232, 2, 7, 7] - 
+
+Node: "Constant_254" execute "Constant" in 576.1µs:
+	Input: 
+	Output: "606" with shape [4] - 
+
+Node: "Reshape_255" execute "Reshape" in 9.0104ms:
+	Input: "605" with shape [1, 232, 2, 7, 7] - "606" with shape [4] - 
+	Output: "607" with shape [1, 464, 7, 7] - 
+
+Node: "Conv_256" execute "Conv" in 24.7249739s:
+	Input: "607" with shape [1, 464, 7, 7] - "conv5.0.weight" with shape [1024, 464, 1, 1] - 
+	Output: "608" with shape [1, 1024, 7, 7] - 
+
+Node: "BatchNormalization_257" execute "BatchNormalization" in 113.7956ms:
+	Input: "608" with shape [1, 1024, 7, 7] - "conv5.1.weight" with shape [1024] - "conv5.1.bias" with shape [1024] - "conv5.1.running_mean" with shape [1024] - "conv5.1.running_var" with shape [1024] - 
+	Output: "609" with shape [1, 1024, 7, 7] - 
+
+Node: "Relu_258" execute "Relu" in 731.8µs:
+	Input: "609" with shape [1, 1024, 7, 7] - 
+	Output: "610" with shape [1, 1024, 7, 7] - 
+
+Node: "ReduceMean_259" execute "ReduceMean" in 7.7831ms:
+	Input: "610" with shape [1, 1024, 7, 7] - 
+	Output: "611" with shape [1, 1024] - 
+
+Node: "Gemm_260" execute "Gemm" in 21.2581ms:
+	Input: "611" with shape [1, 1024] - "fc.weight" with shape [1000, 1024] - "fc.bias" with shape [1000] - 
+	Output: "output" with shape [1, 1000] - 
+
+Output: "output" with shape [1, 1000]:
+FLOAT([[-16.69803, 6.353217, -24.523952, -49.185608, 8.695376, ..., 18.022228, -11.236167, -23.43121, -23.613337, 7.189306]], shape=[1, 1000], strides=[1000, 1], layout=CFcf (0xf), dynamic ndim=2)
 

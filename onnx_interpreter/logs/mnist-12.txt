@@ -1,65 +1,14 @@
 Model: mnist-12
 Input: "Input3" with shape [1, 1, 28, 28]:
-FLOAT([[[[-0.8895705, -0.082158804, -0.029957771, -0.5904043, 0.21742344, ..., 0.030699253, -0.11143565, 0.92656326, -0.7413895, 0.21165562],
-   [0.8447375, -0.8779044, 0.441226, 0.6899359, -0.8820927, ..., -0.9588456, -0.4559939, -0.23158813, 0.2935567, -0.32154274],
-   [-0.3740909, 0.14372182, -0.71492076, -0.78312254, -0.35089493, ..., -0.3477242, -0.069565296, -0.58887506, 0.9591508, -0.20809484],
-   [-0.07267642, 0.3802328, -0.28808546, -0.51778984, 0.2736752, ..., 0.8031275, 0.05889225, 0.0865376, -0.6584134, -0.33020878],
-   [0.2750697, -0.53735876, 0.48408175, 0.93367195, 0.21235514, ..., -0.4847896, 0.43719745, -0.91758037, -0.8964336, -0.8593426],
+INT32([[[[255, 255, 255, 255, 255, ..., 255, 255, 255, 255, 255],
+   [255, 255, 255, 255, 255, ..., 255, 255, 255, 255, 255],
+   [255, 255, 255, 255, 255, ..., 255, 255, 255, 255, 255],
+   [255, 255, 255, 255, 255, ..., 255, 255, 255, 255, 255],
+   [255, 255, 255, 255, 255, ..., 255, 255, 255, 255, 255],
    ...,
-   [0.16279387, -0.72054744, -0.8482795, 0.98192596, -0.12943006, ..., -0.77275586, 0.6812868, -0.5253229, 0.3826816, 0.19434738],
-   [0.2661395, -0.5413642, -0.3375802, -0.05692506, -0.7329633, ..., 0.3706081, -0.2133143, 0.44559574, 0.6684265, 0.15984082],
-   [0.761461, -0.1532085, 0.3723445, -0.9607587, 0.55472374, ..., 0.337317, -0.34158564, 0.56193566, 0.28925276, -0.39168692],
-   [0.24178553, -0.29216743, 0.7321665, 0.9718425, -0.4946921, ..., 0.1609137, -0.66468835, 0.22553015, -0.78244805, -0.66235495],
-   [-0.9110954, -0.08525252, -0.7007313, 0.9106698, -0.65647674, ..., 0.37298274, -0.46344352, 0.5945456, -0.4106114, -0.21674132]]]], shape=[1, 1, 28, 28], strides=[784, 784, 28, 1], layout=Cc (0x5), dynamic ndim=4)
-
-Node: "Convolution28" execute "Conv" in 503.808ms:
-	Input: "Input3" with shape [1, 1, 28, 28] - "Parameter5" with shape [8, 1, 5, 5] - 
-	Output: "Convolution28_Output_0" with shape [1, 8, 28, 28] - 
-
-Node: "Plus30" execute "Add" in 986.1µs:
-	Input: "Convolution28_Output_0" with shape [1, 8, 28, 28] - "Parameter6" with shape [8, 1, 1] - 
-	Output: "Plus30_Output_0" with shape [1, 8, 28, 28] - 
-
-Node: "ReLU32" execute "Relu" in 242.9µs:
-	Input: "Plus30_Output_0" with shape [1, 8, 28, 28] - 
-	Output: "ReLU32_Output_0" with shape [1, 8, 28, 28] - 
-
-Node: "Pooling66" execute "MaxPool" in 9.1232ms:
-	Input: "ReLU32_Output_0" with shape [1, 8, 28, 28] - 
-	Output: "Pooling66_Output_0" with shape [1, 8, 14, 14] - 
-
-Node: "Convolution110" execute "Conv" in 1.3401542s:
-	Input: "Pooling66_Output_0" with shape [1, 8, 14, 14] - "Parameter87" with shape [16, 8, 5, 5] - 
-	Output: "Convolution110_Output_0" with shape [1, 16, 14, 14] - 
-
-Node: "Plus112" execute "Add" in 811.3µs:
-	Input: "Convolution110_Output_0" with shape [1, 16, 14, 14] - "Parameter88" with shape [16, 1, 1] - 
-	Output: "Plus112_Output_0" with shape [1, 16, 14, 14] - 
-
-Node: "ReLU114" execute "Relu" in 188.6µs:
-	Input: "Plus112_Output_0" with shape [1, 16, 14, 14] - 
-	Output: "ReLU114_Output_0" with shape [1, 16, 14, 14] - 
-
-Node: "Pooling160" execute "MaxPool" in 6.8713ms:
-	Input: "ReLU114_Output_0" with shape [1, 16, 14, 14] - 
-	Output: "Pooling160_Output_0" with shape [1, 16, 4, 4] - 
-
-Node: "Times212_reshape0" execute "Reshape" in 91µs:
-	Input: "Pooling160_Output_0" with shape [1, 16, 4, 4] - "Pooling160_Output_0_reshape0_shape" with shape [2] - 
-	Output: "Pooling160_Output_0_reshape0" with shape [1, 256] - 
-
-Node: "Times212_reshape1" execute "Reshape" in 599.2µs:
-	Input: "Parameter193" with shape [16, 4, 4, 10] - "Parameter193_reshape1_shape" with shape [2] - 
-	Output: "Parameter193_reshape1" with shape [256, 10] - 
-
-Node: "Times212" execute "MatMul" in 650.6µs:
-	Input: "Pooling160_Output_0_reshape0" with shape [1, 256] - "Parameter193_reshape1" with shape [256, 10] - 
-	Output: "Times212_Output_0" with shape [1, 10] - 
-
-Node: "Plus214" execute "Add" in 109.1µs:
-	Input: "Times212_Output_0" with shape [1, 10] - "Parameter194" with shape [1, 10] - 
-	Output: "Plus214_Output_0" with shape [1, 10] - 
-
-Output: "Plus214_Output_0" with shape [1, 10]:
-FLOAT([[-4.208367, -0.57690346, -0.48814416, 0.4838912, 2.2489154, 1.5211864, -3.8289926, 0.23107499, 2.8189533, 0.3840329]], shape=[1, 10], strides=[10, 1], layout=CFcf (0xf), dynamic ndim=2)
+   [255, 255, 255, 255, 255, ..., 255, 255, 255, 255, 255],
+   [255, 255, 255, 255, 255, ..., 255, 255, 255, 255, 255],
+   [255, 255, 255, 255, 255, ..., 255, 255, 255, 255, 255],
+   [255, 255, 255, 255, 255, ..., 255, 255, 255, 255, 255],
+   [255, 255, 255, 255, 255, ..., 255, 255, 255, 255, 255]]]], shape=[1, 1, 28, 28], strides=[784, 784, 28, 1], layout=Cc (0x5), dynamic ndim=4)
 

@@ -13,3 +13,5 @@ pub mod utils;
 pub mod array;
 
 pub mod attribute;
+
+pub mod input_for_mnist;
