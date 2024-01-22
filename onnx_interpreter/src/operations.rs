@@ -1170,7 +1170,7 @@ where
     let mut result = a.dot(&b) * alpha;
 
     if let Some(c) = c {
-        let c_2 = c.view().into_dimensionality::<ndarray::Ix2>().map_err(|_| "Tensor C with wrong dimensionality")?.to_owned();
+        let c_2 = c.view().into_dimensionality::<ndarray::Ix1>().map_err(|_| "Tensor C with wrong dimensionality")?.to_owned();
         result = result + &c_2 * beta;
     }
 

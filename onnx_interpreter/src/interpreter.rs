@@ -243,7 +243,7 @@ pub fn execute_node(node: &NodeProto, inputs:  &HashMap<String, ArrayMultiType>)
     Ok(outputs)
 }
 
-pub fn execute_graph(graph: &GraphProto, inputs: &mut HashMap<String, ArrayMultiType>, verbose: bool) -> Result<HashMap<String, ArrayMultiType>, &'static str> {
+pub fn execute_graph(graph: &GraphProto, inputs: &mut HashMap<String, ArrayMultiType>, verbose: bool) -> Result<(HashMap<String, ArrayMultiType>, Vec<(String, String, Vec<String>, Vec<Vec<usize>>, Vec<String>, Vec<Vec<usize>>, Duration)>), &'static str> {
     let shared_inputs = Arc::new((Mutex::new(inputs.clone()), Condvar::new()));
     let mut threads = Vec::new();
     
@@ -290,6 +290,9 @@ pub fn execute_graph(graph: &GraphProto, inputs: &mut HashMap<String, ArrayMulti
             }
             inputs.extend(node_outputs.clone());
             cvar.notify_all();
+
+            let input_shape = node_clone.input.iter().map(|input| inputs_clone.get(input).unwrap().shape().to_vec()).collect::<Vec<Vec<usize>>>();
+            return (node_clone.name, node_clone.op_type, node_clone.input, input_shape, node_outputs.keys().cloned().collect::<Vec<String>>(), node_outputs.values().cloned().map(|x| x.shape().to_vec()).collect::<Vec<Vec<usize>>>(), duration);
         }));
 
         if  !verbose {
@@ -297,9 +300,9 @@ pub fn execute_graph(graph: &GraphProto, inputs: &mut HashMap<String, ArrayMulti
         }
     }
     println!();
-
+    let mut info = Vec::new();
     for (index, thread) in threads.into_iter().enumerate() {
-        thread.join().map_err(|_| "Could not join thread")?;
+        info.push(thread.join().unwrap());
         if !verbose {
             print!("Node terminated: {}/{}\r", index + 1, graph.node.len());
         }
@@ -310,5 +313,5 @@ pub fn execute_graph(graph: &GraphProto, inputs: &mut HashMap<String, ArrayMulti
     let inputs = lock.lock().unwrap();
     let outputs = graph.output.iter().map(|output| (output.name.clone(), inputs.get(&output.name).unwrap().clone())).collect::<HashMap<String, ArrayMultiType>>();
 
-    Ok(outputs)
+    Ok((outputs, info))
 }
