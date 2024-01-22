@@ -36,7 +36,7 @@ Node: "Plus112" execute "Add" in 418.6µs:
 	Input: "Convolution110_Output_0" with shape [1, 16, 14, 14] - "Parameter88" with shape [16, 1, 1] - 
 	Output: "Plus112_Output_0" with shape [1, 16, 14, 14] - 
 
-Node: "ReLU114" execute "Relu" in 146.2µs:
+Node: "ReLU114" execute "Relu" in 137.1µs:
 	Input: "Plus112_Output_0" with shape [1, 16, 14, 14] - 
 	Output: "ReLU114_Output_0" with shape [1, 16, 14, 14] - 
 
