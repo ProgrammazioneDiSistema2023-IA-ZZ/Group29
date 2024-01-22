@@ -2,7 +2,6 @@ use std::any::{Any, TypeId};
 use std::fs::File;
 use std::io::Write;
 use std::time::Instant;
-use onnx_interpreter::array::ArrayMultiType;
 
 use onnx_interpreter::interpreter::execute_graph;
 use onnx_interpreter::onnx::*;
@@ -18,10 +17,15 @@ fn main() {
     let model = file::read::<ModelProto>(&format!("models/{}.onnx", model_name)).unwrap();
     let graph = model.graph.unwrap(); 
 
+    let user_input = match model_name {
+        "mnist-12" => Some(input_for_mnist()),
+        _ => None
+    };
+
     let mut log_file = File::create(&format!("logs/{}.txt", model_name)).unwrap();
     log_file.write(format!("Model: {}\n", model_name).as_bytes()).unwrap();
 
-    let mut inputs = get_inputs(&graph, Some(input_for_mnist())).unwrap();
+    let mut inputs = get_inputs(&graph, user_input).unwrap();
 
     for input in graph.input.iter() {
         let (name, array) = inputs.get_key_value(&input.name).unwrap();
@@ -53,11 +57,25 @@ fn main() {
 
     for (name, array) in outputs.iter() {
         log_file.write(format!("Output: {:?} with shape {:?}:\n{:?}\n\n", name, array.shape(), array).as_bytes()).unwrap();
+        if model_name == "mnist-12" {
+            let index = array.arg_max();
+            log_file.write(format!("Predicted number: {:?}\n\n", index).as_bytes()).unwrap();
+        }
     }
 
     // Print outputs
     println!("Execution time: {:?}", duration);
-    outputs.iter().for_each(|(name, tensor)| println!("Output: {:?} \n{:?}", name, tensor));
 
+    match model_name {
+        "mnist-12" => {
+            outputs.iter().for_each(|(name, tensor)| {
+                println!("Output: {:?} \n{:?}", name, tensor);
+                let index = tensor.arg_max();
+                println!("Predicted number: {:?}", index);
+            })
+        },
+        _ =>  outputs.iter().for_each(|(name, tensor)| println!("Output: {:?} \n{:?}", name, tensor))
+    }
+ 
 }
 

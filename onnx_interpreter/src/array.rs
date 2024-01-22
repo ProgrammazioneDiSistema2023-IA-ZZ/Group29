@@ -163,6 +163,19 @@ impl ArrayMultiType {
         }
     }
 
+    pub fn arg_max(&self) -> i64 {
+        match self {
+            ArrayMultiType::FLOAT(a) => a.iter().enumerate().max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap()).unwrap().0 as i64,
+            ArrayMultiType::UINT8(a) => a.iter().enumerate().max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap()).unwrap().0 as i64,
+            ArrayMultiType::INT8(a) => a.iter().enumerate().max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap()).unwrap().0 as i64,
+            ArrayMultiType::UINT16(a) => a.iter().enumerate().max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap()).unwrap().0 as i64,
+            ArrayMultiType::INT16(a) => a.iter().enumerate().max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap()).unwrap().0 as i64,
+            ArrayMultiType::INT32(a) => a.iter().enumerate().max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap()).unwrap().0 as i64,
+            ArrayMultiType::INT64(a) => a.iter().enumerate().max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap()).unwrap().0 as i64,
+            _ => panic!("ArgMax op does not support this data type")
+        }
+    }
+
     pub fn to_vec_usize(&self) -> Vec<usize> {
         match self {
             ArrayMultiType::FLOAT(a) => a.iter().map(|&x| x as usize).collect::<Vec<usize>>(),
