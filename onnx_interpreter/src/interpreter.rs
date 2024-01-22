@@ -103,19 +103,19 @@ pub fn execute_node(node: &NodeProto, inputs:  &HashMap<String, ArrayMultiType>)
         "Gemm" => {
             let alpha = match attributes.get("alpha") {
                 Some(Attribute::Float(alpha)) => *alpha,
-                _ => return Err("Invalid alpha")
+                _ => 1.0
             };
             let beta = match attributes.get("beta") {
                 Some(Attribute::Float(beta)) => *beta,
-                _ => return Err("Invalid beta")
+                _ => 1.0
             };
             let trans_a = match attributes.get("transA") {
                 Some(Attribute::Int(a)) => *a != 0,
-                _ => return Err("Invalid transA")
+                _ => false
             };
             let trans_b = match attributes.get("transB") {
                 Some(Attribute::Int(b)) => *b != 0,
-                _ => return Err("Invalid transB")
+                _ => false
             };
             let bias = match input_tensors.len() {
                 3.. => Some(input_tensors[2]),

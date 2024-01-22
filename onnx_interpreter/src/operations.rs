@@ -1214,9 +1214,6 @@ pub fn convolution<T: 'static + Clone + Copy + Zero + Mul<Output = T> + Send + S
     pads: &[i64],
     strides: &[i64],
 ) -> Array<T, IxDyn> {
-    if auto_pad != "NOTSET" {
-        panic!("Auto padding not supported yet");
-    }
     if dilations != &[1, 1] {
         panic!("Dilation not supported yet");
     }
@@ -1334,10 +1331,6 @@ pub fn max_pool<T: 'static + Clone + Copy + Zero + PartialOrd + Send + Sync>(
     storage_order: bool,
     strides: &[i64],
 ) -> Array<T, IxDyn> {
-    if auto_pad != "NOTSET" {
-        println!("Auto padding not supported yet {}", auto_pad);
-        panic!("Auto padding not supported yet");
-    }
     if ceil_mode {
         panic!("Ceil mode not supported yet");
     }
@@ -1350,10 +1343,46 @@ pub fn max_pool<T: 'static + Clone + Copy + Zero + PartialOrd + Send + Sync>(
     if input.ndim() != 4 {
         panic!("Input tensor must have 4 dimensions (N x C x H x W)");
     }
+    let real_pads = match auto_pad {
+        "NOTSET" => pads.to_vec(),
+        "SAME_UPPER" => {
+            let mut new_pads = vec![0; kernel_shape.len() * 2];
+            for i in 0..kernel_shape.len() {
+                let input_size = input.shape()[i + 2] as i64;
+                let filter_size = kernel_shape[i];
+                let output_size = (input_size + strides[i] - 1) / strides[i];
+                let total_padding = if output_size * strides[i] + filter_size > input_size + strides[i] {
+                    output_size * strides[i] + filter_size - input_size - strides[i]
+                } else {
+                    0
+                };
+                new_pads[i] = total_padding / 2;
+                new_pads[i + kernel_shape.len()] = total_padding - new_pads[i];
+            }
+            new_pads
+        }
+        "SAME_LOWER" => {
+            let mut new_pads = vec![0; kernel_shape.len() * 2];
+            for i in 0..kernel_shape.len() {
+                let input_size = input.shape()[i + 2] as i64;
+                let filter_size = kernel_shape[i];
+                let output_size = (input_size + strides[i] - 1) / strides[i];
+                let total_padding = if output_size * strides[i] + filter_size > input_size + strides[i] {
+                    output_size * strides[i] + filter_size - input_size - strides[i]
+                } else {
+                    0
+                };
+                new_pads[i + kernel_shape.len()] = total_padding / 2;
+                new_pads[i] = total_padding - new_pads[i + kernel_shape.len()];
+            }
+            new_pads
+        }
+        _ => panic!("Auto padding not supported yet"),
+    };
 
     let out_dim = input.shape()[2..].iter()
         .enumerate()
-        .map(|(i, &d) | (d - kernel_shape[i] as usize + pads[i] as usize + pads[i + input.ndim() - 2] as usize) / strides[i] as usize + 1)
+        .map(|(i, &d) | (d - kernel_shape[i] as usize + real_pads[i] as usize + real_pads[i + input.ndim() - 2] as usize) / strides[i] as usize + 1)
         .collect::<Vec<_>>();
     let share_output = Arc::new(Mutex::new(Array::<T, IxDyn>::zeros(IxDyn(&[input.shape()[0], input.shape()[1], out_dim[0], out_dim[1]]))));
     let share_input = Arc::new(RwLock::new(input.clone()));
@@ -1364,7 +1393,7 @@ pub fn max_pool<T: 'static + Clone + Copy + Zero + PartialOrd + Send + Sync>(
             let share_output_clone = Arc::clone(&share_output);
             let share_input_clone = Arc::clone(&share_input);
             let kernel_shape_clone = kernel_shape.to_vec();
-            let pads_clone = pads.to_vec();
+            let real_pads_clone = real_pads.to_vec();
             let strides_clone = strides.to_vec();
             let out_dim_clone = out_dim.to_vec();
             threads.push(thread::spawn(move || {
@@ -1375,8 +1404,8 @@ pub fn max_pool<T: 'static + Clone + Copy + Zero + PartialOrd + Send + Sync>(
                         let mut max = T::zero();
                         for ky in 0..kernel_shape_clone[0] {
                             for kx in 0..kernel_shape_clone[1] {
-                                let in_y = y as i64 * strides_clone[0] + ky - pads_clone[0];
-                                let in_x = x as i64 * strides_clone[1] + kx - pads_clone[1];
+                                let in_y = y as i64 * strides_clone[0] + ky - real_pads_clone[0];
+                                let in_x = x as i64 * strides_clone[1] + kx - real_pads_clone[1];
                                 if in_y >= 0 && in_y < input.shape()[2] as i64 && in_x >= 0 && in_x < input.shape()[3] as i64 {
                                     let input_idx = [n, c, in_y as usize, in_x as usize];
                                     if input[input_idx] > max {
